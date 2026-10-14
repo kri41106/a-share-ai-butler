@@ -1,3 +1,18 @@
+# 个人 A 股 AI 股票管家（a-share-ai-butler）
+
+> 本 README 于 2026-10-14 修改：新增本项目阶段说明，以下 StockWidget 原始说明保留。
+> 基于 [sbr0574/StockWidget](https://github.com/sbr0574/StockWidget)（Apache-2.0）。原作者：sbr0574；完整版权与许可见 [LICENSE](LICENSE)、[NOTICE](NOTICE)。
+
+目前完成第一阶段的基础项目导入与评估，尚不是最终桌面 MVP，没有本项目 EXE 发布。
+当前运行仍显示 StockWidget 原有界面，原有非 A 股入口仍在；A 股限定、持仓管理、锁定仓保护及后台提醒会按后续阶段实现。
+只做行情监测和辅助分析，真实交易始终由用户本人手动执行，禁止接入券商交易 API 和保存交易凭据。
+未引入付费 AI 调用。
+
+查看 [PROGRESS.md](PROGRESS.md) 了解完成内容、测试结果和已知问题；候选对比见 [EVALUATION.md](EVALUATION.md)。
+下方下载链接指向上游原程序，不是本项目发布版本。
+
+---
+
 # StockWidget
 
 简洁的桌面行情显示工具，用透明浮窗查看自选行情，也可在 Windows 任务栏中显示。支持股票、基金、全球主要指数和上期所期货，兼容 **Windows、macOS 和 Linux**。
