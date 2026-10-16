@@ -1,7 +1,7 @@
 # PROGRESS
 
 更新时间：2026-10-16（北京时间）
-当前阶段：第二阶段 Windows 启动修复 winfix1，等待再次验收。第三阶段停止。
+当前阶段：第二阶段补充多股票与深色主题 stage2-multi1 已交付，等待验收。第三阶段未开始。
 仓库：https://github.com/kri41106/a-share-ai-butler
 续作先读本文件；候选选择与许可证评估见 EVALUATION.md，不必重新全面调研。
 
