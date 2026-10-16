@@ -30,7 +30,7 @@
 - Windows PyInstaller one-dir EXE 已在当前沙箱构建成功，保留 StockWidget.exe 文件名。
 - 完整套件496项：10项错误、17项跳过。9项错误来自此前已知的 macOS 迁移用例在 Windows 的符号链接权限/目录链接及文件占用；另1项为代码表测试缺少 pypinyin。未删除测试或改写无关逻辑来掩盖失败。
 - 本地运行所需 Qt Essentials 6.11.1、Shiboken6 6.11.1、Requests 2.34.2 已安装；复用完整下载的 Qt wheel，未升级项目依赖。本地未安装无关 Qt Addons；Actions仍使用原 requirements.txt。
-- GitHub Actions 本阶段运行结果需结合远端记录确认；本地构建成功不能表述为云端构建通过。
+- GitHub Actions：推送后查询运行列表仍为空，云端未有本阶段运行结果。连接器没有 workflow_dispatch 接口；已提交推送/手动触发配置，可在仓库 Actions 页面启用并手动运行 Build Windows。本地构建成功不能表述为云端构建通过。
 - 未完成 Windows 用户桌面实机交互、托盘恢复、高 DPI、多显示器或打包 EXE 实机运行验收，不能声称全部可用。
 
 ## 使用与个人验收
@@ -51,4 +51,3 @@
 - 目录名和关于/更新入口仍沿用 StockWidget，上游代码列表也从原来源获取。后续正式发布前应隔离品牌/数据路径并调整更新入口。
 - Qt 共享库、LGPL/GPL文本、第三方依赖许可及对应上游源代码信息随个人验收包附带；再次公开分发前核对最终每个组件的许可与源码提供方式。
 - 下一步只响应用户验收意见。第三阶段必须由用户明确授权。
-
