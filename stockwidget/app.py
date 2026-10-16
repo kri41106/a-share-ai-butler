@@ -2,6 +2,7 @@
 """应用装配层：创建各层对象、连接信号、处理托盘与后台任务。
 
 本模块只负责“组装”各层，不含界面细节（见 ui/）与数据/网络细节（见 data/）。
+Modified 2026-10-16 for a-share-ai-butler: local portfolio panel; Apache-2.0.
 """
 
 import os
@@ -9,7 +10,7 @@ import sys
 import threading
 
 from PySide6.QtCore import Qt, QPoint, QTimer, Signal
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QAction, QFont, QFontDatabase
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 import resources.resources_rc  # noqa: F401  加载 Qt 内嵌资源（图标、内置代码列表）
@@ -25,6 +26,8 @@ from stockwidget.ui.controls.style import ApplicationTheme
 from stockwidget.ui.menus import TrayIcon
 from stockwidget.ui.floating.widget import FloatLabel
 from stockwidget.ui.floating.taskbar import TaskbarController
+from stockwidget.core.portfolio import PositionStore, PortfolioError
+from stockwidget.ui.portfolio import PortfolioPanel
 
 
 def _load_custom_icon(path) -> tuple[str, QIcon]:
@@ -82,6 +85,10 @@ class App(QApplication):
 
     def __init__(self, argv):
         super().__init__(argv)
+        if sys.platform == "win32":
+            if not QFontDatabase.families():
+                QFontDatabase.addApplicationFont(os.path.join(os.environ.get("WINDIR", "C:\\Windows"), "Fonts", "msyh.ttc"))
+            self.setFont(QFont("Microsoft YaHei UI", 10))
         # macOS 不在程序坞显示图标；Linux 由窗口的 Qt.Tool 标志避开任务栏
         _hide_macos_dock_icon()
         self.app_version = APP_VERSION
@@ -94,6 +101,10 @@ class App(QApplication):
 
         self.setQuitOnLastWindowClosed(False)
         self.theme = ApplicationTheme(self)
+        if not cfg:
+            cfg = {"watchlist": {"sz001330": {"code": "001330", "market": "sz", "name": "博纳影业",
+                                             "type": "深", "checked": True}},
+                   "refresh_seconds": 60, "color_mode": "dark"}
 
         # 加载图标
         self._icon_choice = cfg.get('app_icon')
@@ -148,6 +159,15 @@ class App(QApplication):
         self.codes_refresh_finished.connect(self._on_codes_refresh_finished)
         self._start_network_tasks()
         self._start_codes_initialization()
+        self.portfolio = None
+        try:
+            self.portfolio = PortfolioPanel(PositionStore(), self)
+            self.theme.set_mode(cfg.get("color_mode", "dark"))
+            menu = self.tray.contextMenu()
+            menu.insertAction(menu.actions()[0], QAction("我的持仓", self, triggered=self.portfolio.show_panel))
+            self.portfolio.show()
+        except PortfolioError as error:
+            QMessageBox.critical(None, "持仓读取失败", str(error))
 
     def find_icon(self, choice: str) -> QIcon:
         if choice == "custom":

@@ -1,7 +1,11 @@
 name: Build Windows
+# Modified 2026-10-16 for a-share-ai-butler: targeted tests + offscreen smoke.
 
 on:
   push:
+    branches:
+      - main
+      - stage-2-portfolio
     tags:
       - 'v*'
   workflow_dispatch:
@@ -27,6 +31,16 @@ jobs:
       - name: Generate Qt resources
         run: pyside6-rcc resources/resources.qrc -o resources/resources_rc.py
 
+      - name: Run portfolio and related baseline tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m unittest tests.core.test_portfolio tests.ui.test_portfolio tests.core.test_watchlist tests.core.test_config tests.core.test_window_rules tests.data.test_quotes tests.data.test_bars tests.core.test_quote_presentation -v
+
+      - name: Offscreen application startup (not a physical desktop test)
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python scripts/smoke_portfolio.py
+
       - name: Build with PyInstaller
         run: |
           pyinstaller --clean --noconfirm StockWidget.spec
@@ -46,21 +60,7 @@ jobs:
         env:
           RELEASE_VERSION: ${{ steps.version.outputs.value }}
         run: |
-          $staging = Join-Path $env:RUNNER_TEMP "StockWidget-Windows-$env:RELEASE_VERSION"
-          New-Item -ItemType Directory -Path $staging | Out-Null
-
-          Copy-Item README.md, LICENSE, NOTICE -Destination $staging
-          Copy-Item dist\StockWidget\StockWidget.exe -Destination $staging
-          Copy-Item dist\StockWidget\_internal -Destination (Join-Path $staging "_internal") -Recurse
-
-          $expected = @("_internal", "LICENSE", "NOTICE", "README.md", "StockWidget.exe") | Sort-Object
-          $actual = Get-ChildItem -LiteralPath $staging | ForEach-Object Name | Sort-Object
-          if (Compare-Object -ReferenceObject $expected -DifferenceObject $actual) {
-            throw "Unexpected files in release staging directory: $($actual -join ', ')"
-          }
-
-          $archive = "StockWidget-Windows-$env:RELEASE_VERSION.zip"
-          Compress-Archive -Path (Join-Path $staging "*") -DestinationPath $archive
+          python scripts/package_windows.py --output "StockWidget-Windows-$env:RELEASE_VERSION.zip"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7

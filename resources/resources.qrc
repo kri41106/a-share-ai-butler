@@ -1,5 +1,7 @@
 <RCC>
     <qresource prefix="/">
+        <!-- Added 2026-10-16: personal portfolio form, Apache-2.0. -->
+        <file alias="portfolio.ui">../stockwidget/ui/portfolio.ui</file>
         <file alias="StockWidget.ico">icons/StockWidget.ico</file>
         <file alias="DarkSW.ico">icons/DarkSW.ico</file>
         <file alias="LightGlass.ico">icons/LightGlass.ico</file>

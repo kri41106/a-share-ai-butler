@@ -8,3 +8,11 @@ __pycache__/
 /CHANGELOG.md
 .DS_Store
 resources/resources_rc.py
+
+# Added 2026-10-16: never commit personal portfolio data or exports.
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+*.csv
+.venv/

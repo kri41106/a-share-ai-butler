@@ -1,4 +1,6 @@
-"""应用装配、代码同步调度、图标、版本检查和资源完整性。"""
+"""应用装配、代码同步调度、图标、版本检查和资源完整性。
+Modified 2026-10-16: also validate the embedded portfolio form, Apache-2.0.
+"""
 
 from pathlib import Path
 from types import SimpleNamespace
@@ -244,11 +246,15 @@ class ResourceTests(unittest.TestCase):
         for node in root.iter("file"):
             path = ROOT / "resources" / node.text
             self.assertTrue(path.is_file(), path)
-            self.assertIn(path.parent.name, ("icons", "data"))
+            if node.attrib["alias"] == "portfolio.ui":
+                self.assertEqual(path.resolve(), ROOT / "stockwidget" / "ui" / "portfolio.ui")
+            else:
+                self.assertIn(path.parent.name, ("icons", "data"))
             self.assertEqual(node.attrib["alias"], path.name)
             aliases[node.attrib["alias"]] = path
         self.assertTrue(set(CODE_LIST_FILES).issubset(aliases))
         self.assertIn("StockWidget.ico", aliases)
+        self.assertIn("portfolio.ui", aliases)
 
 
 class UpdateCheckTests(unittest.TestCase):
