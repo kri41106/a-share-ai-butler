@@ -1,4 +1,6 @@
-"""复用 one-dir 产物，打包程序/声明；不会读取用户持仓目录。Apache-2.0。"""
+"""复用 one-dir 产物，打包程序/声明；不会读取用户持仓目录。Apache-2.0。
+Modified 2026-10-16: mark the QtCore startup repair package.
+"""
 from importlib.metadata import distribution, PackageNotFoundError
 from pathlib import Path
 import argparse
@@ -23,8 +25,12 @@ def main():
         stage.mkdir()
         shutil.copy2(source / "StockWidget.exe", stage)
         shutil.copytree(source / "_internal", stage / "_internal")
-        for name in ("README.md", "LICENSE", "NOTICE", "THIRD_PARTY.md", "PROGRESS.md"):
+        for name in ("README.md", "LICENSE", "NOTICE", "THIRD_PARTY.md", "PROGRESS.md", "WINDOWS_STARTUP.md"):
             shutil.copy2(ROOT / name, stage)
+        (stage / "STARTUP_FIX.txt").write_text(
+            "第二阶段 Windows 启动修复版 stage2-winfix1\n"
+            "排除误打包的 Poppler ICU DLL；请完整解压到新目录，不与旧包混合。\n"
+            "详见 WINDOWS_STARTUP.md。本程序不执行真实交易。\n", encoding="utf-8-sig")
         shutil.copytree(ROOT / "third-party-licenses", stage / "third-party-licenses")
         licenses = stage / "third-party-licenses"
         python_license = Path(sys.base_prefix) / "LICENSE.txt"

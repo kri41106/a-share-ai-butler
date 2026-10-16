@@ -4,6 +4,7 @@
 # - Windows / Linux：EXE + COLLECT，产出 one-dir 目录（dist/StockWidget/）。
 # - macOS：额外执行 BUNDLE 阶段，产出可直接拖入「应用程序」的
 #   StockWidget.app 应用包（dist/StockWidget.app）。
+# Modified 2026-10-16 for a-share-ai-butler: exclude incompatible PATH ICU DLLs.
 
 import sys
 from pathlib import Path
@@ -75,6 +76,13 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
+if sys.platform == 'win32':
+    # Qt 6.11.1 uses Windows' unversioned ICU API. PyInstaller may instead find
+    # Poppler's ICU on PATH (ucnv_open_78, etc.), causing ERROR_PROC_NOT_FOUND.
+    # Keep the Windows-provided icuuc.dll; do not redistribute that name or the
+    # data DLL pulled in exclusively by the incompatible Poppler ICU.
+    a.binaries = [entry for entry in a.binaries
+                  if Path(entry[0]).name.lower() not in {'icuuc.dll', 'icudt78.dll'}]
 pyz = PYZ(a.pure)
 
 exe = EXE(

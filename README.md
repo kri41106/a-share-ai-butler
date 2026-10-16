@@ -3,6 +3,8 @@
 > 本 README 于 2026-10-16 修改：更新持仓 MVP 使用说明，以下 StockWidget 原始说明保留。
 > 基于 [sbr0574/StockWidget](https://github.com/sbr0574/StockWidget)（Apache-2.0）。原作者：sbr0574；完整版权与许可见 [LICENSE](LICENSE)、[NOTICE](NOTICE)。
 
+Windows 启动修复版 **stage2-winfix1** 修复了旧验收包 QtCore DLL 导入失败；请完整解压新包到新文件夹，不与旧包混合。包内有 STARTUP_FIX.txt，诊断步骤见 [WINDOWS_STARTUP.md](WINDOWS_STARTUP.md)。
+
 现已增加中文“我的股票管家”持仓面板，默认深色主题。第一次使用会建立一份博纳影业示例持仓；已有本地数据不会被示例覆盖。
 首页显示估算市值和盈亏。“修改持仓”可保存名称、沪深北 A 股代码、数量和成本；“设置”内单独修改锁定仓，并再次确认。成本为0时不计算盈亏比例。持仓和变更历史保存在本机，与原行情缓存分开。
 “详细行情”呼出原浮窗；托盘菜单的“我的持仓”可恢复面板。面板关闭后仍在托盘运行，通过托盘“退出”结束程序。

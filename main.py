@@ -15,13 +15,16 @@ sbr0574@qq.com
 
 本项目基于 Apache License 2.0 开源协议发布, 请遵守相关协议
 Licensed under Apache License 2.0
+Modified 2026-10-16: optional packaged startup check before Qt imports.
 """
 
 import sys
 
-from stockwidget.app import App
-
 if __name__ == "__main__":
-
-    app = App(sys.argv)
-    sys.exit(app.exec())
+    if len(sys.argv) == 3 and sys.argv[1] == "--startup-check":
+        from stockwidget.platform.startup_check import run
+        sys.exit(run(sys.argv[2]))
+    else:
+        from stockwidget.app import App
+        app = App(sys.argv)
+        sys.exit(app.exec())

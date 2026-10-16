@@ -1,5 +1,5 @@
 name: Build Windows
-# Modified 2026-10-16 for a-share-ai-butler: targeted tests + offscreen smoke.
+# Modified 2026-10-16: verify the frozen EXE after building, including Qt DLL load.
 
 on:
   push:
@@ -44,6 +44,9 @@ jobs:
       - name: Build with PyInstaller
         run: |
           pyinstaller --clean --noconfirm StockWidget.spec
+
+      - name: Start the actual frozen EXE with isolated PATH and temporary data
+        run: python scripts/verify_windows_package.py --exe dist/StockWidget/StockWidget.exe --report frozen-startup.json
 
       - name: Read application version
         id: version

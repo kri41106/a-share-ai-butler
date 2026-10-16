@@ -1,9 +1,25 @@
 # PROGRESS
 
 更新时间：2026-10-16（北京时间）
-当前阶段：第二阶段持仓管理 MVP，代码与本地验证已完成，等待用户验收。不得自动进入第三阶段。
+当前阶段：第二阶段 Windows 启动修复 winfix1，等待再次验收。第三阶段停止。
 仓库：https://github.com/kri41106/a-share-ai-butler
 续作先读本文件；候选选择与许可证评估见 EVALUATION.md，不必重新全面调研。
+
+## Windows 启动修复 winfix1（2026-10-16）
+
+- 用户实机验收发现旧包 QtCore ImportError（找不到指定的程序），旧包的构建成功不能代表可启动。
+- 已复现：隔离 Python 路径后加载旧包 QtCore.pyd，出现相同 ImportError。
+- 证据：旧 Analysis-00.toc 从构建环境 Poppler/Library/bin 收集 icuuc.dll；该 DLL 缺少 Qt6Core 请求的无版本后缀 ICU 函数。Windows System32 的 icuuc.dll 提供所需的全部20项 ICU 导入。
+- QtCore.pyd、Qt6Core.dll、Shiboken6 均存在且为 x64；随包 MSVC 文件版本14.44.35211.0。没有依据要求用户先安装 VC++。
+- 最小打包修复：StockWidget.spec 排除错误的 icuuc.dll 和其引入的 icudt78.dll，沿用 Windows 系统 ICU。不改 Python/PySide/Qt 版本，不改持仓数据库、盈亏或锁定仓业务。
+- 增加 --startup-check 诊断入口，使用临时 AppData，不读取个人持仓；只隔离自启注册表操作，Qt 和实际应用窗口照常初始化。检查结束用 exit(0)，避免托盘窗口拒绝关闭影响自动检查。
+- 新增实际冻结 EXE 验证脚本及 Windows workflow 构建后启动门禁；清理 PATH/PYTHONPATH/Qt 插件环境，使用 Windows Qt 平台、临时工作目录并检查窗口与事件循环。
+- 已验证构建后的真实 EXE：frozen=true、Qt=6.11.1、qt_platform=windows、icu_from_system32=true、panel_visible=true、event_loop_exit=0。
+- 已从新 ZIP 完整解压到独立目录再次启动实际 EXE，检查同样通过；压缩包完整性与无个人数据库检查通过。新包下载文件名：a-share-ai-butler-stage2-winfix1-windows.zip。
+- 测试环境为当前 Windows 11 build 26200 x64 沙箱，Python 3.12.14；不是新建的干净虚拟机，未单独验证 Windows 10 或所有旧版系统。
+- 原有44项持仓及面板回归测试通过；修复不涉及上述业务文件。
+- 新包名含 stage2-winfix1，包内含 STARTUP_FIX.txt 和 WINDOWS_STARTUP.md。应解压到全新文件夹，不能与桌面的旧包混用；不覆盖个人 AppData 数据。
+- 尚需用户重新进行自己的 Windows 实机人工验收；不进入第三阶段。
 
 ## 已完成
 
@@ -31,7 +47,7 @@
 - 完整套件496项：10项错误、17项跳过。9项错误来自此前已知的 macOS 迁移用例在 Windows 的符号链接权限/目录链接及文件占用；另1项为代码表测试缺少 pypinyin。未删除测试或改写无关逻辑来掩盖失败。
 - 本地运行所需 Qt Essentials 6.11.1、Shiboken6 6.11.1、Requests 2.34.2 已安装；复用完整下载的 Qt wheel，未升级项目依赖。本地未安装无关 Qt Addons；Actions仍使用原 requirements.txt。
 - GitHub Actions：推送后查询运行列表仍为空，云端未有本阶段运行结果。连接器没有 workflow_dispatch 接口；已提交推送/手动触发配置，可在仓库 Actions 页面启用并手动运行 Build Windows。本地构建成功不能表述为云端构建通过。
-- 未完成 Windows 用户桌面实机交互、托盘恢复、高 DPI、多显示器或打包 EXE 实机运行验收，不能声称全部可用。
+- winfix1 已通过当前 Windows 环境的冻结 EXE 自动启动检查；用户桌面交互、托盘恢复、高 DPI、多显示器与 Windows 10 人工验收仍未完成，不能声称全部可用。
 
 ## 使用与个人验收
 
@@ -51,3 +67,4 @@
 - 目录名和关于/更新入口仍沿用 StockWidget，上游代码列表也从原来源获取。后续正式发布前应隔离品牌/数据路径并调整更新入口。
 - Qt 共享库、LGPL/GPL文本、第三方依赖许可及对应上游源代码信息随个人验收包附带；再次公开分发前核对最终每个组件的许可与源码提供方式。
 - 下一步只响应用户验收意见。第三阶段必须由用户明确授权。
+
