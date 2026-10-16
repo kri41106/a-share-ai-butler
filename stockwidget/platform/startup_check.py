@@ -11,7 +11,7 @@ import traceback
 def run(report_file):
     report_path = Path(report_file).resolve()
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    result = {"build": "stage2-winfix1", "ok": False, "frozen": bool(getattr(sys, "frozen", False)),
+    result = {"build": "stage2-multi1", "ok": False, "frozen": bool(getattr(sys, "frozen", False)),
               "python": platform.python_version(), "windows": platform.platform()}
     def stage(name):
         result["stage"] = name

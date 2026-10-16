@@ -25,11 +25,11 @@ def main():
         stage.mkdir()
         shutil.copy2(source / "StockWidget.exe", stage)
         shutil.copytree(source / "_internal", stage / "_internal")
-        for name in ("README.md", "LICENSE", "NOTICE", "THIRD_PARTY.md", "PROGRESS.md", "WINDOWS_STARTUP.md"):
+        for name in ("README.md", "LICENSE", "NOTICE", "THIRD_PARTY.md", "PROGRESS.md", "WINDOWS_STARTUP.md", "UPGRADE_MULTI.md"):
             shutil.copy2(ROOT / name, stage)
         (stage / "STARTUP_FIX.txt").write_text(
-            "第二阶段 Windows 启动修复版 stage2-winfix1\n"
-            "排除误打包的 Poppler ICU DLL；请完整解压到新目录，不与旧包混合。\n"
+            "第二阶段多股票与深色输入框优化版 stage2-multi1\n"
+            "保留 winfix1 的 ICU 修复；请完整解压到新目录，不与旧包混合。\n"
             "详见 WINDOWS_STARTUP.md。本程序不执行真实交易。\n", encoding="utf-8-sig")
         shutil.copytree(ROOT / "third-party-licenses", stage / "third-party-licenses")
         licenses = stage / "third-party-licenses"

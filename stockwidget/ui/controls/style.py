@@ -1,4 +1,6 @@
-"""系统调色板、设置页样式与颜色预览图标，供自绘控件共用。"""
+"""系统调色板、设置页样式与颜色预览图标，供自绘控件共用。
+Modified 2026-10-16: scoped, high-contrast portfolio controls.
+"""
 
 from PySide6.QtCore import QByteArray, QObject, QRectF, Qt
 from PySide6.QtGui import QColor, QFont, QFontInfo, QFontMetrics, QGuiApplication, QPalette, QIcon, QPainter, QPixmap
@@ -32,6 +34,46 @@ def theme_palette(dark: bool, base: QPalette) -> QPalette:
     for role in (QPalette.WindowText, QPalette.Text, QPalette.ButtonText):
         palette.setColor(QPalette.Disabled, role, QColor("#888888"))
     return palette
+
+
+def apply_portfolio_theme(widget):
+    """只作用于持仓面板/其对话框，不覆盖应用或原 StockWidget 设置。"""
+    palette = theme_palette(True, widget.palette())
+    for group in (QPalette.Active, QPalette.Inactive, QPalette.Disabled):
+        disabled = group == QPalette.Disabled
+        for role, color in ((QPalette.Base, "#303030"), (QPalette.AlternateBase, "#292929"),
+                            (QPalette.Text, "#a0a0a0" if disabled else "#f2f2f2"),
+                            (QPalette.PlaceholderText, "#aaaaaa"), (QPalette.Highlight, "#3566b8"),
+                            (QPalette.HighlightedText, "#ffffff")):
+            palette.setColor(group, role, QColor(color))
+    widget.setPalette(palette)
+    widget.setStyleSheet("""
+        QWidget { background-color: #222222; color: #eeeeee; }
+        QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
+            background-color: #303030; color: #f2f2f2;
+            border: 1px solid #777777; border-radius: 4px; padding: 5px;
+            selection-background-color: #3566b8; selection-color: #ffffff;
+        }
+        QLineEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus {
+            border: 2px solid #7ab8ff;
+        }
+        QLineEdit:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled, QComboBox:disabled {
+            color: #aaaaaa; background-color: #292929; border-color: #555555;
+        }
+        QComboBox QAbstractItemView {
+            background-color: #303030; color: #f2f2f2;
+            selection-background-color: #3566b8; selection-color: #ffffff;
+        }
+        QPushButton { background-color: #353535; color: #f2f2f2; border: 1px solid #777777;
+                      border-radius: 4px; padding: 5px 8px; }
+        QPushButton:hover { background-color: #444444; }
+        QPushButton:focus, QPushButton:default { border: 2px solid #7ab8ff; }
+        QPushButton:disabled { color: #999999; border-color: #555555; }
+        QTableWidget { background-color: #242424; alternate-background-color: #292929;
+                       color: #eeeeee; gridline-color: #505050;
+                       selection-background-color: #344c6b; selection-color: #ffffff; }
+        QHeaderView::section { background-color: #303030; color: #eeeeee; padding: 6px; }
+    """)
 
 
 class ApplicationTheme(QObject):

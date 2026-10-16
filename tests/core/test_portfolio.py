@@ -182,9 +182,9 @@ class PositionTests(unittest.TestCase):
         with self.assertRaises(PortfolioError):
             PositionStore(self.path)
 
-    def test_missing_row_not_reseeded(self):
+    def test_missing_table_not_reseeded(self):
         with closing(sqlite3.connect(self.path)) as db, db:
-            db.execute("DELETE FROM position")
+            db.execute("DROP TABLE positions")
         with self.assertRaises(PortfolioError):
             PositionStore(self.path)
 
