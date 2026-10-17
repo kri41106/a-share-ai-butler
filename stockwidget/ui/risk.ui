@@ -1,0 +1,353 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ui version="4.0">
+ <class>RiskForm</class>
+ <widget class="QWidget" name="RiskForm">
+  <layout class="QVBoxLayout" name="riskRootLayout">
+   <item>
+    <widget class="QLabel" name="stockLabel">
+     <property name="text">
+      <string>风险分析与提醒</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="ruleNotice">
+     <property name="text">
+      <string>本地规则判断，非AI模型；不预测走势、不执行交易。</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="errorLabel">
+     <property name="text">
+      <string />
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QTabWidget" name="tabs">
+     <widget class="QWidget" name="analysisPage">
+      <attribute name="title">
+       <string>风险分析</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="analysisPageLayout">
+       <item>
+        <widget class="QPlainTextEdit" name="analysisText">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="analyzeButton">
+         <property name="text">
+          <string>读取最新本地数据并保存分析</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="alertsPage">
+      <attribute name="title">
+       <string>设置提醒</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="alertsPageLayout">
+       <item>
+        <widget class="QScrollArea" name="alertsScroll">
+         <property name="widgetResizable">
+          <bool>true</bool>
+         </property>
+         <widget class="QWidget" name="alertsContent">
+          <layout class="QVBoxLayout" name="alertsContentLayout">
+           <item>
+            <widget class="QLabel" name="settingsNotice">
+             <property name="text">
+              <string>所有条件默认关闭。价格用元，涨跌幅用百分比（填5表示5%）。
+高于/低于为严格比较；涨跌幅达到包含等于。只对有效新鲜行情作价格判断。</string>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="aboveRow">
+             <item>
+              <widget class="QCheckBox" name="aboveEnabled">
+               <property name="text">
+                <string>股价高于指定价格（元）</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="aboveEdit">
+               <property name="placeholderText">
+                <string>留空且关闭时不设阈值</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="belowRow">
+             <item>
+              <widget class="QCheckBox" name="belowEnabled">
+               <property name="text">
+                <string>股价低于指定价格（元）</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="belowEdit">
+               <property name="placeholderText">
+                <string>留空且关闭时不设阈值</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="riseRow">
+             <item>
+              <widget class="QCheckBox" name="riseEnabled">
+               <property name="text">
+                <string>当日涨幅达到（%）</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="riseEdit">
+               <property name="placeholderText">
+                <string>留空且关闭时不设阈值</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="fallRow">
+             <item>
+              <widget class="QCheckBox" name="fallEnabled">
+               <property name="text">
+                <string>当日跌幅达到（%）</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="fallEdit">
+               <property name="placeholderText">
+                <string>留空且关闭时不设阈值</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="dataEnabled">
+             <property name="text">
+              <string>行情连续更新失败或过期/时间异常时提醒</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="failuresRow">
+             <item>
+              <widget class="QLabel" name="failuresLabel">
+               <property name="text">
+                <string>连续失败次数</string>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="failuresSpin">
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>1000</number>
+               </property>
+               <property name="value">
+                <number>3</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="stale_secondsRow">
+             <item>
+              <widget class="QLabel" name="stale_secondsLabel">
+               <property name="text">
+                <string>过期秒数（价格判断仍限120秒）</string>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="stale_secondsSpin">
+               <property name="minimum">
+                <number>120</number>
+               </property>
+               <property name="maximum">
+                <number>86400</number>
+               </property>
+               <property name="value">
+                <number>120</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="cooldownRow">
+             <item>
+              <widget class="QLabel" name="cooldownLabel">
+               <property name="text">
+                <string>同条件恢复后再次提醒的最短间隔（秒）</string>
+               </property>
+               <property name="wordWrap">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="cooldownSpin">
+               <property name="minimum">
+                <number>60</number>
+               </property>
+               <property name="maximum">
+                <number>604800</number>
+               </property>
+               <property name="value">
+                <number>1800</number>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QLabel" name="dedupNotice">
+             <property name="text">
+              <string>持续满足同一条件只记录并通知一次，包括休市期间。条件恢复后才重新待触发；冷却未结束时等待。重启保留去重状态。系统可能屏蔽桌面通知，记录仍在本机保存。</string>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="saveAlertsButton">
+             <property name="text">
+              <string>保存当前股票提醒设置</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="recordsPage">
+      <attribute name="title">
+       <string>提醒与分析记录</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="recordsPageLayout">
+       <item>
+        <layout class="QHBoxLayout" name="recordFilters">
+         <item>
+          <widget class="QComboBox" name="recordMode">
+           <item>
+            <property name="text">
+             <string>提醒记录</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>分析记录</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="selectedOnly">
+           <property name="text">
+            <string>仅当前股票</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="refreshRecordsButton">
+           <property name="text">
+            <string>刷新记录</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="markReadButton">
+           <property name="text">
+            <string>标记选中提醒已读</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QLabel" name="recordsNotice">
+         <property name="text">
+          <string>显示最近200条；取消“仅当前股票”可查看全部及已归档股票。选中一条查看完整依据。</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QTableWidget" name="recordsTable">
+         <property name="selectionBehavior">
+          <enum>QAbstractItemView::SelectRows</enum>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::SingleSelection</enum>
+         </property>
+         <property name="editTriggers">
+          <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPlainTextEdit" name="recordDetails">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+         <property name="maximumHeight">
+          <number>170</number>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources />
+ <connections />
+</ui>

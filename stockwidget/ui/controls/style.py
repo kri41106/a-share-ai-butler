@@ -60,6 +60,10 @@ def apply_portfolio_theme(widget):
         QLineEdit:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled, QComboBox:disabled {
             color: #aaaaaa; background-color: #292929; border-color: #555555;
         }
+        QCheckBox { spacing: 8px; }
+        QCheckBox::indicator { width: 16px; height: 16px; border: 1px solid #aaaaaa; background: #303030; }
+        QCheckBox::indicator:checked { background: #3566b8; border-color: #7ab8ff; image: url(:/risk-check.svg); }
+        QCheckBox::indicator:disabled { border-color: #666666; }
         QComboBox QAbstractItemView {
             background-color: #303030; color: #f2f2f2;
             selection-background-color: #3566b8; selection-color: #ffffff;

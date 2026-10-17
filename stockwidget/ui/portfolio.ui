@@ -181,6 +181,31 @@
         </layout>
        </item>
        <item>
+        <layout class="QHBoxLayout" name="riskActions">
+         <item>
+          <widget class="QPushButton" name="riskButton">
+           <property name="text">
+            <string>风险分析（本地规则）</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="alertsButton">
+           <property name="text">
+            <string>设置提醒</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="recordsButton">
+           <property name="text">
+            <string>提醒记录</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
         <widget class="QPushButton" name="refreshButton">
          <property name="text">
           <string>手动刷新行情</string>

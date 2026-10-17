@@ -16,6 +16,7 @@ from stockwidget.core.portfolio import PortfolioError, money, valuation, portfol
 from stockwidget.ui.controls.style import apply_portfolio_theme
 from stockwidget.core.window_rules import quote_timestamp, QUOTE_TIMEZONE
 from stockwidget.data.quotes import fetch_quote_result
+from stockwidget.ui.risk import RiskController
 
 
 class QuotePoller(QObject):
@@ -103,6 +104,9 @@ class PortfolioPanel(QWidget):
         self.clock = QTimer(self)
         self.clock.timeout.connect(self.render)
         self.clock.start(5000)
+        self.risk = RiskController(self)
+        for name, index in (("riskButton",0),("alertsButton",1),("recordsButton",2)):
+            self.form.findChild(QObject,name).clicked.connect(lambda _checked=False, tab=index: self.risk.open(tab))
         app.win.configuration_changed.connect(self.sync_quote_settings)
         self.sync_quote_settings()
         QTimer.singleShot(0, self.refresh)
@@ -326,6 +330,7 @@ class PortfolioPanel(QWidget):
             self.source = source
             self.quotes.clear()
             self.failed_codes.clear()
+            self.risk.reset_source()
         interval = max(30, min(3600, self.app.win.refresh_seconds))
         self.timer.start(interval * 1000)
         self.render()
@@ -347,6 +352,7 @@ class PortfolioPanel(QWidget):
                 self.failed_codes.discard(position.code)
             else:
                 self.failed_codes.add(position.code)
+        self.risk.quote_received()
         self.render()
 
     def show_details(self):

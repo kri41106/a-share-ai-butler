@@ -11,7 +11,7 @@ import traceback
 def run(report_file):
     report_path = Path(report_file).resolve()
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    result = {"build": "stage2-multi1", "ok": False, "frozen": bool(getattr(sys, "frozen", False)),
+    result = {"build": "stage3a-risk1", "ok": False, "frozen": bool(getattr(sys, "frozen", False)),
               "python": platform.python_version(), "windows": platform.platform()}
     def stage(name):
         result["stage"] = name
@@ -52,7 +52,11 @@ def run(report_file):
 
             def finish():
                 result["panel_visible"] = app.portfolio is not None and app.portfolio.isVisible()
-                result["ok"] = result["panel_visible"] and result["icu_from_system32"]
+                center = app.portfolio.risk.open(1) if app.portfolio else None
+                result["reminder_settings_visible"] = bool(center and center.isVisible() and center.tabs.currentIndex() == 1)
+                result["risk_database_ready"] = bool(app.portfolio and app.portfolio.risk.store)
+                result["ok"] = (result["panel_visible"] and result["icu_from_system32"]
+                                and result["reminder_settings_visible"] and result["risk_database_ready"])
                 stage("closing_after_startup_check")
                 # Test-mode exit must not be vetoed by close-to-tray windows.
                 app.tray.hide()

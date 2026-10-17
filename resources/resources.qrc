@@ -1,6 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
 <RCC>
     <qresource prefix="/">
-        <!-- Added 2026-10-16: personal portfolio form, Apache-2.0. -->
         <file alias="portfolio.ui">../stockwidget/ui/portfolio.ui</file>
         <file alias="StockWidget.ico">icons/StockWidget.ico</file>
         <file alias="DarkSW.ico">icons/DarkSW.ico</file>
@@ -19,5 +19,7 @@
         <file alias="index_cn.json">data/index_cn.json</file>
         <file alias="index_global.json">data/index_global.json</file>
         <file alias="futures_sh.json">data/futures_sh.json</file>
+        <file alias="risk.ui">../stockwidget/ui/risk.ui</file>
+        <file alias="risk-check.svg">icons/risk-check.svg</file>
     </qresource>
 </RCC>
