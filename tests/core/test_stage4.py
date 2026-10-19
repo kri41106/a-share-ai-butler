@@ -160,7 +160,7 @@ class Stage4Tests(unittest.TestCase):
         packet=self.packet(private=False)
         for private in ('9.429','1200 股','锁定仓 200 股','策略仓 1000 股'):self.assertNotIn(private,packet['prompt'])
         self.assertIn('资料不足以支持方向判断时必须选择观望',packet['prompt'])
-        self.assertIn('锁定仓不可卖',packet['prompt'])
+        self.assertIn('禁止建议卖出锁定仓',packet['prompt'])
     def test_corrupt_or_cross_source_cache_is_reported_without_reset(self):
         for q in ({'_code':CODE,'_source':'sina','current_price':'invalid'},self.quote(_source='eastmoney')):
             with closing(sqlite3.connect(self.store.path)) as db:

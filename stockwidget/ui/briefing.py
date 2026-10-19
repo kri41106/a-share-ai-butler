@@ -10,8 +10,11 @@ from PySide6.QtWidgets import QWidget,QVBoxLayout,QTableWidgetItem,QApplication
 from PySide6.QtUiTools import QUiLoader
 from stockwidget.core.portfolio import PortfolioError
 from stockwidget.core.risk import clock_text,RiskError
-from stockwidget.core.briefing import BriefingStore,build_packet,source_status,report_text
-from stockwidget.core.advice import extract_summary,summary_text,report_status
+from stockwidget.core.briefing import BriefingStore,build_packet,source_status,report_text,scope_caption
+from stockwidget.core.candidates import CandidateStore,research_universe
+from stockwidget.core.quote_snapshot import quote_view
+from stockwidget.core.window_rules import quote_timestamp
+from stockwidget.core.advice import extract_summary,summary_text,report_status,evidence_context
 from stockwidget.data.research import fetch_announcements,fetch_news,ResearchError,safe_link,TTL
 from stockwidget.ui.controls.style import apply_portfolio_theme
 
@@ -24,6 +27,11 @@ class BriefingCenter(QWidget):
         super().__init__(panel,Qt.Window)
         self.panel=panel
         self.store=panel.quote_store or BriefingStore(panel.store.path.parent/'research.sqlite3')
+        self.candidates=CandidateStore(self.store)
+        self.candidate_quotes=self.store.load_quotes(panel.source);self.candidate_source=panel.source
+        from stockwidget.ui.portfolio import QuotePoller
+        self.candidate_poller=QuotePoller(self)
+        self.candidate_poller.finished.connect(self.accept_candidate_quotes)
         self.positions=[];self.draft=None;self.article_rows=[];self.report_rows=[];self.busy=False
         self.setWindowTitle('新闻公告与综合分析 · 手动ChatGPT资料')
         self.resize(1050,700);self.setMinimumSize(750,580)
@@ -36,10 +44,13 @@ class BriefingCenter(QWidget):
         QVBoxLayout(self).addWidget(self.form)
         names=('scopeCombo','statusLabel','tabs','articleFilter','articlesTable','articleDetails','overviewText',
                'privateCheck','promptText','packetCombo','reportTitleEdit','importText','reportsTable','reportDetails',
-               'privacyStateLabel','suggestionText','reportStateLabel','expandReportCheck','generatedAtEdit')
+               'privacyStateLabel','suggestionText','reportStateLabel','expandReportCheck','generatedAtEdit',
+               'candidateNameEdit','candidateCodeEdit','candidatesTable','taskCombo','focusEdit')
         for name in names:setattr(self,name,self.form.findChild(QObject,name))
         self.statusLabel.setMaximumHeight(85)
         self.scopeCombo.currentIndexChanged.connect(self.rebuild)
+        self.taskCombo.currentIndexChanged.connect(self.task_changed)
+        self.focusEdit.editingFinished.connect(self.rebuild)
         self.privateCheck.setChecked(self.store.private_preference())
         self.privateCheck.toggled.connect(self.private_changed)
         self.expandReportCheck.toggled.connect(self.reportDetails.setVisible)
@@ -49,9 +60,12 @@ class BriefingCenter(QWidget):
         self.reportsTable.currentCellChanged.connect(self.select_report)
         callbacks={'reloadPositionsButton':self.reload_positions,'fetchButton':lambda:self.fetch(True),
                    'openArticleButton':self.open_article,'buildOverviewButton':self.rebuild,'buildPromptButton':self.rebuild,
-                   'copyPromptButton':self.copy_prompt,'openChatGPTButton':self.open_chatgpt,'refreshQuotesButton':self.panel.refresh,
+                   'copyPromptButton':self.copy_prompt,'openChatGPTButton':self.open_chatgpt,'refreshQuotesButton':self.refresh_quotes,
                    'importReportButton':self.import_report,'refreshReportsButton':self.refresh_reports,
-                   'copyReportButton':self.copy_report,'deleteReportButton':self.delete_report}
+                   'copyReportButton':self.copy_report,'deleteReportButton':self.delete_report,
+                   'addCandidateButton':self.add_candidate,'archiveCandidateButton':self.archive_candidate,
+                   'analyzeCandidateButton':self.analyze_candidate,'discoverButton':self.discover,
+                   'compareCandidatesButton':self.compare_candidates,'refreshCandidatesButton':self.refresh_research}
         for name,callback in callbacks.items():self.form.findChild(QObject,name).clicked.connect(callback)
         self.fetched.connect(self.on_fetched)
         self.progress.connect(self.statusLabel.setText)
@@ -72,17 +86,114 @@ class BriefingCenter(QWidget):
             self.scopeCombo.blockSignals(True);self.scopeCombo.clear()
             self.scopeCombo.addItem('全部持仓','')
             for p in self.positions:self.scopeCombo.addItem(p.name+' '+p.code,f'{p.position_id}|{p.code}')
+            candidates=[p for p in self.candidates.load_all() if p.code not in {h.code for h in self.positions}]
+            for p in candidates:self.scopeCombo.addItem('候选：'+p.name+' '+p.code,f'{p.position_id}|{p.code}')
+            if candidates:
+                self.scopeCombo.addItem('全部候选（未登记持仓）','candidates')
+                self.scopeCombo.addItem('持仓 + 候选对照','combined')
             selected_key=f'{selected.position_id}|{selected.code}' if selected else ''
             preferred=selected_key if prefer_selected or previous is None else previous
             index=self.scopeCombo.findData(preferred)
             self.scopeCombo.setCurrentIndex(index if index>=0 else 0);self.scopeCombo.blockSignals(False)
-            self.rebuild();self.refresh_reports()
+            self.rebuild();self.refresh_reports();self.render_candidates()
         except (ResearchError,PortfolioError) as error:self.statusLabel.setText(str(error))
 
     def current_positions(self):
         # 操作时重读，避免打开后持仓被修改仍导出旧股数。
         positions=self.panel.store.load_all();scope=self.scopeCombo.currentData()
-        return [p for p in positions if not scope or f'{p.position_id}|{p.code}'==scope]
+        candidates=self.candidates.load_all();universe=research_universe(positions,candidates)
+        if scope=='combined':return universe
+        if scope=='candidates':return [p for p in universe if getattr(p,'candidate',False)]
+        if not scope:return positions
+        return [p for p in universe if f'{p.position_id}|{p.code}'==scope]
+
+    def quote_snapshot(self):
+        if self.candidate_source!=self.panel.source:
+            self.candidate_quotes=self.store.load_quotes(self.panel.source);self.candidate_source=self.panel.source
+        return dict(self.candidate_quotes,**self.panel.display_quotes())
+
+    def render_candidates(self):
+        self.candidate_rows=[p for p in self.candidates.load_all() if p.code not in {h.code for h in self.panel.store.load_all()}]
+        quotes=self.quote_snapshot();table=self.candidatesTable;table.setColumnCount(3)
+        table.setHorizontalHeaderLabels(['候选股票（非持仓）','参考价格','来源 / 时间 / 状态']);table.setRowCount(len(self.candidate_rows))
+        for i,p in enumerate(self.candidate_rows):
+            q=quotes.get(p.code) or {};view=quote_view(q,now=time.time(),source=self.panel.source,code=p.code)
+            for j,text in enumerate((p.name+' '+p.code,str(view['price'])+' 元' if view['available'] else '暂无可用行情',
+                view['source_name']+'\n'+(clock_text(view['timestamp']) if view['timestamp'] else '时间未知')+'\n'+view['status'])):
+                item=QTableWidgetItem(text);item.setToolTip(text);table.setItem(i,j,item)
+            table.setRowHeight(i,90)
+        for j,width in enumerate((220,120,600)):table.setColumnWidth(j,width)
+
+    def add_candidate(self):
+        try:
+            self.candidates.save(self.candidateNameEdit.text(),self.candidateCodeEdit.text(),held_codes={p.code for p in self.panel.store.load_all()})
+            self.candidateNameEdit.clear();self.candidateCodeEdit.clear();self.reload_positions()
+            self.statusLabel.setText('已加入独立候选清单，未登记买入。选择股票后刷新资料，再分析。')
+        except (ResearchError,PortfolioError) as error:self.statusLabel.setText(str(error))
+
+    def selected_candidate(self):
+        i=self.candidatesTable.currentRow()
+        if not 0<=i<len(self.candidate_rows):raise PortfolioError('请先在列表中选择一只候选股。')
+        return self.candidate_rows[i]
+
+    def archive_candidate(self):
+        try:
+            p=self.selected_candidate()
+            if not self.panel._question('移除候选股票',f'仅从研究清单移除 {p.name} {p.code}；原报告及持仓不变。确认移除？'):return
+            self.candidates.archive(p.code);self.reload_positions()
+        except (ResearchError,PortfolioError) as error:self.statusLabel.setText(str(error))
+
+    def analyze_candidate(self):
+        try:
+            p=self.selected_candidate();self.taskCombo.setCurrentIndex(0)
+            self.scopeCombo.setCurrentIndex(self.scopeCombo.findData(f'{p.position_id}|{p.code}'))
+            self.rebuild();self.tabs.setCurrentIndex(2)
+        except (ResearchError,PortfolioError) as error:self.statusLabel.setText(str(error))
+
+    def discover(self):
+        self.taskCombo.setCurrentIndex(1);self.rebuild();self.tabs.setCurrentIndex(2)
+
+    def compare_candidates(self):
+        index=self.scopeCombo.findData('combined')
+        if index<0:self.statusLabel.setText('请先添加至少一只候选股，再与持仓比较。');return
+        self.scopeCombo.setCurrentIndex(index);self.taskCombo.setCurrentIndex(2);self.rebuild();self.tabs.setCurrentIndex(2)
+
+    def task_changed(self,*_args):
+        if self.taskCombo.currentIndex() in (1,2):
+            index=self.scopeCombo.findData('combined')
+            self.scopeCombo.setCurrentIndex(index if index>=0 else 0)
+        self.rebuild()
+
+    def refresh_research(self):
+        self.refresh_quotes();self.fetch(True)
+
+    def refresh_quotes(self):
+        self.panel.refresh()
+        candidates=[p for p in self.current_positions() if getattr(p,'candidate',False)]
+        if self.tabs.currentIndex()==4:candidates=[p for p in research_universe(self.panel.store.load_all(),self.candidates.load_all()) if getattr(p,'candidate',False)]
+        if candidates:self.candidate_poller.fetch({p.instrument()['market']+p.instrument()['code']:p.instrument() for p in candidates},self.panel.source,self.panel.generation)
+        else:self.rebuild()
+
+    def accept_candidate_quotes(self,payload):
+        self.candidate_poller.busy=False
+        keys,source,generation,ok,data,error=payload
+        if source!=self.panel.source or generation!=self.panel.generation:return
+        if self.candidate_source!=source:self.candidate_quotes=self.store.load_quotes(source);self.candidate_source=source
+        try:
+            for p in self.candidates.load_all():
+                key=p.instrument()['market']+p.instrument()['code']
+                if key not in keys:continue
+                old=self.candidate_quotes.get(p.code) or {};q=(data or {}).get(key) if ok else None
+                v=quote_view(q,now=time.time(),source=source,code=p.code)
+                stamp=quote_timestamp(old)
+                if q and q.get('_source') in (None,source) and v['available'] and (stamp is None or (v['timestamp'] is not None and v['timestamp']>=stamp)):
+                    q=dict(q,_code=p.code,_source=source,_received_at=time.time());q.pop('_last_error',None)
+                    self.candidate_quotes[p.code]=q
+                elif old:self.candidate_quotes[p.code]=dict(old,_last_error=error or '候选行情缺失、代码异常或时间倒退，保留原快照')
+                else:self.candidate_quotes[p.code]={'_code':p.code,'_source':source,'_last_error':error or '来源未返回有效候选行情'}
+                if self.candidate_quotes[p.code].get('current_price'):self.store.cache_quote(p.code,source,self.candidate_quotes[p.code])
+            self.render_candidates();self.rebuild()
+        except (ResearchError,PortfolioError) as error:self.statusLabel.setText(str(error))
 
     def private_changed(self,checked):
         try:self.store.private_preference(checked)
@@ -91,12 +202,12 @@ class BriefingCenter(QWidget):
 
     def collect(self,private,*,positions=None,quotes=None,now=None):
         positions=self.current_positions() if positions is None else positions
-        quotes=self.panel.display_quotes() if quotes is None else quotes
+        quotes=self.quote_snapshot() if quotes is None else quotes
         now=time.time() if now is None else now
         cache={};alerts={};options={};missing=[];risk_available=self.panel.risk.store is not None
         for p in positions:
             for kind in ('announcement','news'):cache[(p.code,kind)]=self.store.cached(p.code,kind)
-            if private:
+            if private and not getattr(p,'candidate',False):
                 key=(p.position_id,p.code)
                 if risk_available:
                     try:
@@ -106,18 +217,22 @@ class BriefingCenter(QWidget):
                         risk_available=False;missing.append(key)
                 else:missing.append(key)
         return build_packet(positions,quotes,self.panel.source,cache,now=now,include_private=private,
-                            failed_codes=self.panel.failed_codes,alerts=alerts,risk_options=options,risk_missing=missing,failure_counts=self.panel.risk.failures,scope_all=not bool(self.scopeCombo.currentData()))
+                            failed_codes=self.panel.failed_codes,alerts=alerts,risk_options=options,risk_missing=missing,failure_counts=self.panel.risk.failures,
+                            scope_all=self.scopeCombo.currentData() in ('','candidates','combined'),
+                            universe=('combined' if self.scopeCombo.currentData()=='combined' else 'candidates' if positions and all(getattr(p,'candidate',False) for p in positions) else 'holdings'),
+                            purpose=('review','discovery','comparison')[self.taskCombo.currentIndex()],focus=self.focusEdit.text())
 
     def rebuild(self,*_args):
         try:
             self.panel._reload();self.panel.render()
-            positions=self.current_positions();quotes=self.panel.display_quotes();now=time.time()
+            positions=self.current_positions();quotes=self.quote_snapshot();now=time.time()
             self.overviewText.setPlainText(self.collect(True,positions=positions,quotes=quotes,now=now)['body'])
             self.draft=self.collect(self.privateCheck.isChecked(),positions=positions,quotes=quotes,now=now)
             self.privacyStateLabel.setText(('已包含持仓：成本、数量、锁定/策略仓及私人提醒；' if self.draft['private'] else '未包含持仓：不导出成本、股数和私人提醒；')+'已记住选择，可随时关闭。')
+            if positions and all(getattr(p,'candidate',False) for p in positions):self.privacyStateLabel.setText('本次仅候选股，没有登记持仓可包含；未生成成本、数量或盈亏。')
             self.promptText.setPlainText(self.draft['prompt'])
             self.statusLabel.setText('资料已在本机整理，未上传。复制后由你决定是否粘贴给ChatGPT。')
-            self.render_articles()
+            self.render_articles();self.render_candidates()
         except (ResearchError,PortfolioError) as error:
             self.draft=None;self.promptText.clear();self.overviewText.setPlainText(str(error));self.statusLabel.setText(str(error))
 
@@ -126,7 +241,9 @@ class BriefingCenter(QWidget):
             self.statusLabel.setText('已有公开资料请求在后台进行，请稍候；其余功能可继续操作。');return
         try:
             jobs=[];now=time.time()
-            for p in self.current_positions():
+            positions=self.current_positions()
+            if self.tabs.currentIndex()==4:positions=[p for p in research_universe(self.panel.store.load_all(),self.candidates.load_all()) if getattr(p,'candidate',False)]
+            for p in positions:
                 for kind in ('announcement','news'):
                     _,state=self.store.cached(p.code,kind)
                     if state and now-state['last_try']<60:continue
@@ -218,7 +335,7 @@ class BriefingCenter(QWidget):
             self.packetCombo.clear()
             self.packetCombo.setPlaceholderText('请先复制分析资料，再选择对应时间导入')
             for p in self.store.packets():
-                scope='、'.join(s['code'] for s in json.loads(p['scope_json']))
+                scope=scope_caption(p)
                 self.packetCombo.addItem(clock_text(p['created'])+' '+scope+('（含私人持仓）' if p['private'] else '（不含私人持仓）'),p['id'])
             index=self.packetCombo.findData(current)
             if index>=0:self.packetCombo.setCurrentIndex(index)
@@ -227,7 +344,7 @@ class BriefingCenter(QWidget):
             table.setHorizontalHeaderLabels(['报告名称','对应股票','用户手动导入时间','数据时间'])
             table.setRowCount(len(self.report_rows))
             for i,r in enumerate(self.report_rows):
-                texts=(r['title'],'、'.join(p['code'] for p in json.loads(r['scope_json'])),clock_text(r['created']),r['data_time'])
+                texts=(r['title'],scope_caption(r),clock_text(r['created']),r['data_time'])
                 for j,text in enumerate(texts):table.setItem(i,j,QTableWidgetItem(text))
                 table.setRowHeight(i,52)
             for j,w in enumerate((200,220,200,380)):table.setColumnWidth(j,w)
@@ -258,8 +375,10 @@ class BriefingCenter(QWidget):
         if not 0<=i<len(self.report_rows):return
         row=self.report_rows[i]
         try:
-            state=report_status(row,self.panel.store.load_all(),self.panel.display_quotes(),self.panel.source,now=time.time())
-            scope='、'.join(p['code'] for p in json.loads(row['scope_json']))
+            positions=research_universe(self.panel.store.load_all(),self.candidates.load_all())
+            cache={(p.code,k):self.store.cached(p.code,k) for p in positions for k in ('announcement','news')}
+            state=report_status(row,positions,self.quote_snapshot(),self.panel.source,now=time.time(),evidence=evidence_context(positions,cache,time.time()))
+            scope=scope_caption(row)
             self.reportStateLabel.setText(state+'\n原报告范围：'+scope+'；所用行情：'+row['data_time'])
         except (ResearchError,PortfolioError) as error:self.reportStateLabel.setText(str(error))
 

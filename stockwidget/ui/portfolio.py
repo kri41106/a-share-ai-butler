@@ -123,7 +123,7 @@ class PortfolioPanel(QWidget):
         self.clock.timeout.connect(self.render)
         self.clock.start(5000)
         self.briefing = None
-        for name,index in (("newsButton",0),("summaryButton",1),("chatgptButton",2),("importAiButton",3),("aiHistoryButton",3)):
+        for name,index in (("newsButton",0),("summaryButton",1),("chatgptButton",2),("importAiButton",3),("aiHistoryButton",3),("candidatesButton",4)):
             self.form.findChild(QObject,name).clicked.connect(lambda _checked=False,tab=index:self.open_briefing(tab))
         self.risk = RiskController(self)
         for name, index in (("riskButton",0),("alertsButton",1),("recordsButton",2)):

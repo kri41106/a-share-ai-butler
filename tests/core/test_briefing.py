@@ -40,10 +40,10 @@ class BriefingTests(unittest.TestCase):
         for text in ('1200 股','9.429','锁定仓 200 股','策略仓 1000 股','685.20'):
             self.assertIn(text,packet['body'])
         self.assertIn('禁止建议卖出锁定仓',packet['prompt'])
-        self.assertIn('不要输出具体买卖股数',packet['prompt'])
+        self.assertIn('不输出具体交易股数',packet['prompt'])
     def test_prompt_contains_securities_volume_source_times_and_fact_uncertainty(self):
         packet=self.packet()
-        for text in (CODE,'博纳影业','10000 股','新浪财经','北京时间','事实','推测','未知','不保证收益','不编造实时行情'):
+        for text in (CODE,'博纳影业','10000 股','新浪财经','北京时间','事实','推断','未知','不保证收益','不编造实时行情'):
             self.assertIn(text,packet['prompt'])
         self.assertIn('001330.SZ 行情',packet['data_time'])
     def test_no_volume_invention_and_invalid_volume_rejected(self):

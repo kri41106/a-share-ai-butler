@@ -242,6 +242,13 @@
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QPushButton" name="candidatesButton">
+           <property name="text">
+            <string>其他A股研究</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
        <item>

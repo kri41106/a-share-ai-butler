@@ -11,7 +11,7 @@ import traceback
 def run(report_file):
     report_path = Path(report_file).resolve()
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    result = {"build": "stage4-snapshot1", "ok": False, "frozen": bool(getattr(sys, "frozen", False)),
+    result = {"build": "stage4-prompt2", "ok": False, "frozen": bool(getattr(sys, "frozen", False)),
               "python": platform.python_version(), "windows": platform.platform()}
     def stage(name):
         result["stage"] = name
@@ -89,13 +89,32 @@ def run(report_file):
                     and not briefing.reportDetails.isVisible())
                 app.portfolio.quotes['001330.SZ']['current_price']=11;app.portfolio.render()
                 result['changed_snapshot_report_warning'] = '数据已变化' in briefing.reportStateLabel.text()
+                briefing.tabs.setCurrentIndex(4)
+                briefing.candidateNameEdit.setText('浦发银行');briefing.candidateCodeEdit.setText('600000.SH');briefing.add_candidate()
+                briefing.candidatesTable.setCurrentCell(0,0);briefing.analyze_candidate();app.processEvents()
+                result['independent_candidate_ready'] = (briefing.tabs.currentIndex()==2 and '未登记持仓' in briefing.promptText.toPlainText()
+                    and '9.429' not in briefing.promptText.toPlainText() and len(app.portfolio.store.load_all())==1)
+                briefing.compare_candidates();app.processEvents()
+                result['comparison_ready'] = len(briefing.current_positions())==2 and '支持证据和反对证据' in briefing.promptText.toPlainText()
+                briefing.discover();app.processEvents()
+                result['discovery_prompt_ready'] = '不得只分析我当前持仓' in briefing.promptText.toPlainText()
+                from stockwidget.core.analysis_prompt import research_instructions,TEMPLATE_ID
+                result['analysis_template']=TEMPLATE_ID
+                result['unified_prompt_all_modes']=True
+                for mode in (0,1,2):
+                    briefing.taskCombo.setCurrentIndex(mode);briefing.rebuild();app.processEvents()
+                    prefix,payload=briefing.promptText.toPlainText().split('引用资料JSON：\n',1)
+                    result['unified_prompt_all_modes'] &= (prefix+'引用资料JSON：\n'==research_instructions(True)
+                        and '最多3至5只' not in prefix and bool(json.loads(payload)['资料行']))
                 result['ui_scale'] = app.devicePixelRatio()
                 result["ok"] = (result["panel_visible"] and result["icu_from_system32"]
                                 and result["reminder_settings_visible"] and result["risk_database_ready"]
                                 and result["spin_arrow_increments"] and result["news_center_visible"]
                                 and result["overview_ready"] and result["chatgpt_prompt_private_default_off"]
                                 and result["ai_history_visible"] and result['synthetic_snapshot_export_matches_home']
-                                and result['concise_report_visible'] and result['changed_snapshot_report_warning'])
+                                and result['concise_report_visible'] and result['changed_snapshot_report_warning']
+                                and result['independent_candidate_ready'] and result['comparison_ready'] and result['discovery_prompt_ready']
+                                and result['unified_prompt_all_modes'])
                 stage("closing_after_startup_check")
                 # Test-mode exit must not be vetoed by close-to-tray windows.
                 app.tray.hide()

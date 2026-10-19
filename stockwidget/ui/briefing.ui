@@ -411,6 +411,155 @@
        </item>
       </layout>
      </widget>
+     <widget class="QWidget" name="candidatesPage">
+      <attribute name="title">
+       <string>其他A股 / 候选研究</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="candidatesLayout">
+       <item>
+        <widget class="QLabel" name="candidateNotice">
+         <property name="text">
+          <string>独立研究其他沪深北A股，不需要先买入或登记虚假持仓。可让ChatGPT寻找新候选，再按名称/代码加入清单，核对行情与公告后比较。</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="candidateInputRow">
+         <item>
+          <widget class="QLineEdit" name="candidateNameEdit">
+           <property name="placeholderText">
+            <string>股票名称</string>
+           </property>
+           <property name="maxLength">
+            <number>40</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="candidateCodeEdit">
+           <property name="placeholderText">
+            <string>例如 600000.SH</string>
+           </property>
+           <property name="maxLength">
+            <number>12</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="addCandidateButton">
+           <property name="text">
+            <string>添加候选（非持仓）</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="archiveCandidateButton">
+           <property name="text">
+            <string>移除选中候选</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QTableWidget" name="candidatesTable">
+         <property name="selectionBehavior">
+          <enum>QAbstractItemView::SelectRows</enum>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::SingleSelection</enum>
+         </property>
+         <property name="editTriggers">
+          <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="candidateActions">
+         <item>
+          <widget class="QPushButton" name="refreshCandidatesButton">
+           <property name="text">
+            <string>刷新候选行情与公告</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="analyzeCandidateButton">
+           <property name="text">
+            <string>分析选中候选</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="compareCandidatesButton">
+           <property name="text">
+            <string>比较候选与持仓</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QLabel" name="researchTaskLabel">
+         <property name="text">
+          <string>研究任务与关注点（复制前可在资料预览中核对）：</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="taskCombo">
+         <item>
+          <property name="text">
+           <string>评估所选股票</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>寻找其他A股（ChatGPT核实后筛选）</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>比较持仓与候选</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="focusEdit">
+         <property name="placeholderText">
+          <string>可填关注行业、研究期限、风险偏好；未知可留空，不代表已给出投资建议</string>
+         </property>
+         <property name="maxLength">
+          <number>500</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="discoverButton">
+         <property name="text">
+          <string>寻找其他A股：整理研究要求 → 手动发给ChatGPT</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="candidateLimits">
+         <property name="text">
+          <string>程序不扫描全市场或自动荐股。筛选由你在ChatGPT中手动发起；不能联网或证据不足时不得编造名单。候选不是买入指令，不计入持仓市值。</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </widget>
    </item>
   </layout>
