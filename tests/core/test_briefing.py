@@ -50,12 +50,14 @@ class BriefingTests(unittest.TestCase):
         for volume in (None,float('nan'),float('inf'),-1):
             packet=self.packet(quotes={CODE:{'current_price':10,'timestamp':NOW,'deals_vol':volume}})
             self.assertIn('来源未提供有效数据',packet['body'])
-    def test_stale_failed_or_missing_quote_does_not_value_position(self):
-        for quotes,failed in [({},()),({CODE:{'current_price':10,'timestamp':NOW-121}},()),
+    def test_no_price_stays_missing_but_stale_or_failed_positive_price_is_reference(self):
+        packet=self.packet(private=True,quotes={})
+        self.assertIn('无有效估值',packet['body']);self.assertNotIn('685.20',packet['body'])
+        for quotes,failed in [({CODE:{'current_price':10,'timestamp':NOW-121}},()),
                               ({CODE:{'current_price':10,'timestamp':NOW}},(CODE,))]:
             packet=self.packet(private=True,quotes=quotes,failed=failed)
-            self.assertIn('无有效估值',packet['body'])
-            self.assertNotIn('685.20',packet['body'])
+            self.assertIn('685.20',packet['body']);self.assertIn('非实时',packet['body'])
+            self.assertIn('不足以支持依赖当前价格',packet['body'])
     def test_multi_stock_totals_and_concentration_are_readable(self):
         second=self.holdings.add_position(name='测试第二只',code='600000.SH',total=100,cost=20)
         packet=self.packet(private=True,positions=[self.p,second],quotes={CODE:{'current_price':10,'timestamp':NOW},second.code:{'current_price':20,'timestamp':NOW}})
@@ -107,7 +109,7 @@ class BriefingTests(unittest.TestCase):
         reopened=BriefingStore(self.store.path);reports=reopened.reports()
         self.assertEqual(len(reports),1);self.assertEqual(reports[0]['data_time'],packet['data_time'])
         text=report_text(reports[0])
-        for phrase in ('用户手动导入','未经软件独立核验',CODE,'所用资料时间'):self.assertIn(phrase,text)
+        for phrase in ('用户手动导入','未经软件独立核验',CODE,'所用行情时间'):self.assertIn(phrase,text)
     def test_empty_report_unknown_packet_and_oversize_are_rejected(self):
         pid=self.store.save_packet(self.packet())
         for packet_id,content in [(pid,'  '),(99999,'text'),(pid,'x'*200001)]:

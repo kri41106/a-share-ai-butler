@@ -19,6 +19,9 @@ from stockwidget.data.quotes import fetch_quote_result
 from stockwidget.ui.risk import RiskController
 from stockwidget.ui.briefing import BriefingCenter
 from stockwidget.data.research import ResearchError
+from stockwidget.core.briefing import BriefingStore
+from stockwidget.core.quote_snapshot import quote_view
+from stockwidget.data.closing_quotes import ClosingQuotes
 
 
 class QuotePoller(QObject):
@@ -28,6 +31,7 @@ class QuotePoller(QObject):
     def __init__(self, parent):
         super().__init__(parent)
         self.busy = False
+        self.closing = ClosingQuotes()
 
     def fetch(self, instrument, source, generation):
         if self.busy:
@@ -38,7 +42,12 @@ class QuotePoller(QObject):
         keys = tuple(instruments)
 
         def worker():
-            result = fetch_quote_result(instruments, source)
+            try:
+                ok,data,error=fetch_quote_result(instruments,source)
+                if ok:data=self.closing.enrich(instruments,source,data)
+                result=(ok,data,error)
+            except Exception:
+                result=(False,None,'行情处理失败，保留最后有效快照')
             try:
                 self.finished.emit((keys, source, generation, *result))
             except RuntimeError:
@@ -55,6 +64,13 @@ class PortfolioPanel(QWidget):
         self.positions = store.load_all()
         self.position = self.positions[0] if self.positions else None
         self.quotes, self.failed_codes = {}, set()
+        self.quote_errors={};self.cache_error='';self.quote_store=None
+        try:
+            self.quote_store=BriefingStore(store.path.parent/'research.sqlite3')
+            self.quotes=self.quote_store.load_quotes(app.win.data_source)
+            self.quote_errors={code:q['_last_error'] for code,q in self.quotes.items() if q.get('_last_error')}
+            self.failed_codes=set(self.quote_errors)
+        except ResearchError as error:self.cache_error=str(error)
         self.generation = 0
         self.source = app.win.data_source
         self.setWindowTitle("我的股票管家 · 多股票版")
@@ -151,26 +167,30 @@ class PortfolioPanel(QWidget):
     def select_position(self, row, *_args):
         self.position = self.positions[row] if 0 <= row < len(self.positions) else None
 
+    def display_quotes(self):
+        result={}
+        for p in self.positions:
+            q=dict(self.quotes.get(p.code) or {})
+            q.setdefault('_source',self.source);q.setdefault('_code',p.code)
+            if p.code in self.quote_errors:q['_last_error']=self.quote_errors[p.code]
+            elif p.code in self.failed_codes:q['_last_error']='本次行情更新失败'
+            result[p.code]=q
+        return result
+
     @staticmethod
     def quote_state(quote):
-        if not quote:
-            return "暂无行情", False
-        timestamp = quote_timestamp(quote)
-        if timestamp is None:
-            return "行情时间未知，无法判断是否过期", True
-        age = time.time() - timestamp
-        state = "已过期 / 非实时" if age > 120 else "最近可得，仍可能延迟"
-        if age < -60:
-            state = "时间异常，无法判断新鲜度"
-        raw = datetime.fromtimestamp(timestamp, QUOTE_TIMEZONE).strftime("%m-%d %H:%M:%S")
-        return f"{raw}（北京时间）\n{state}", age > 120 or age < -60
+        v=quote_view(quote,now=time.time())
+        raw=datetime.fromtimestamp(v['timestamp'],QUOTE_TIMEZONE).strftime('%Y-%m-%d %H:%M:%S') if v['timestamp'] else '时间未知'
+        return raw+'（北京时间）\n'+v['source_name']+'\n'+v['status'],not v['live']
 
     @staticmethod
     def _color(value):
         return "#ff7878" if value is not None and value > 0 else "#61ce9c" if value is not None and value < 0 else "#eeeeee"
 
     def render(self):
-        totals = portfolio_totals(self.positions, self.quotes)
+        current=self.display_quotes();now=time.time()
+        usable={code:q for code,q in current.items() if quote_view(q,now=now,source=self.source,code=code)['available']}
+        totals = portfolio_totals(self.positions, usable)
         covered, count = totals["covered"], totals["total"]
         prefix = "全部持仓" if covered == count else "已覆盖部分"
         self.summaryValueLabel.setText(f"{prefix}总市值：{totals['value']:.2f} 元（估算）"
@@ -180,14 +200,15 @@ class PortfolioPanel(QWidget):
         self.summaryProfitLabel.setStyleSheet(f"color: {self._color(totals['profit'])};")
         stale = sum(self.quote_state(self.quotes.get(p.code))[1] for p in self.positions)
         incomplete = "；数据不完整" if covered < count else ""
-        self.coverageLabel.setText(f"持仓股票：{count} 只    行情覆盖：{covered}/{count}{incomplete}    过期或时间未知：{stale} 只")
+        self.coverageLabel.setText(f"持仓股票：{count} 只    行情覆盖：{covered}/{count}{incomplete}    非实时或时间未知：{stale} 只")
         selected = self.position.position_id if self.position else None
         table = self.positionsTable
         table.blockSignals(True)
         table.setRowCount(count)
         for row, p in enumerate(self.positions):
-            quote = self.quotes.get(p.code)
-            result = valuation(p, quote.get("current_price") if quote else None)
+            quote = current.get(p.code)
+            view=quote_view(quote,now=now,source=self.source,code=p.code)
+            result = valuation(p,view["price"]) if view["available"] else None
             price, profit_text, change, profit = "暂无行情", "暂无行情", None, None
             if result:
                 price = f"{money(quote['current_price']):.2f} 元"
@@ -212,15 +233,18 @@ class PortfolioPanel(QWidget):
                 item = QTableWidgetItem(text)
                 item.setData(Qt.UserRole, p.position_id)
                 item.setForeground(QColor(self._color(change if column == 1 else profit if column == 3 else None)))
+                item.setToolTip(text)
                 table.setItem(row, column, item)
-            table.setRowHeight(row, 82)
+            table.setRowHeight(row, 105)
             if p.position_id == selected:
                 table.setCurrentCell(row, 0)
         table.blockSignals(False)
         for name in ("editButton", "detailsButton", "archiveButton"):
             self.form.findChild(QObject, name).setEnabled(self.position is not None)
         self.sourceLabel.setText("行情来源：" + {"sina": "新浪财经", "eastmoney": "东方财富"}[self.source])
-        self.statusLabel.setText(f"每{self.timer.interval() // 1000}秒批量尝试刷新；不保证实时，休市显示最近交易数据。")
+        self.statusLabel.setText(f"每{self.timer.interval() // 1000}秒尝试刷新行情，不是AI自动分析。估值采用所标时间参考价；收盘价非实时。"
+            +((' 缓存提示：'+self.cache_error) if self.cache_error else ''))
+        if self.briefing is not None and self.briefing.isVisible():self.briefing.refresh_report_status()
 
     def _edit_form(self, position):
         self.edit_id = position.position_id if position else None
@@ -340,7 +364,13 @@ class PortfolioPanel(QWidget):
             self.generation += 1
             self.source = source
             self.quotes.clear()
-            self.failed_codes.clear()
+            self.failed_codes.clear();self.quote_errors.clear()
+            if self.quote_store:
+                try:
+                    self.quotes=self.quote_store.load_quotes(source)
+                    self.quote_errors={c:q['_last_error'] for c,q in self.quotes.items() if q.get('_last_error')}
+                    self.failed_codes=set(self.quote_errors)
+                except ResearchError as error:self.cache_error=str(error)
             self.risk.reset_source()
         interval = max(30, min(3600, self.app.win.refresh_seconds))
         self.timer.start(interval * 1000)
@@ -357,12 +387,26 @@ class PortfolioPanel(QWidget):
             QTimer.singleShot(0, self.refresh)
             return
         for position in self.positions:
-            quote = (data or {}).get(self._key(position)) if ok else None
-            if quote and valuation(position, quote.get("current_price")) is not None:
-                self.quotes[position.code] = dict(quote)
-                self.failed_codes.discard(position.code)
-            else:
-                self.failed_codes.add(position.code)
+            quote=(data or {}).get(self._key(position)) if ok else None
+            error=None
+            if quote and quote.get('_code') not in (None,position.code):
+                error='来源股票代码不匹配，保留该股票原快照'
+            elif quote and valuation(position,quote.get('current_price')) is not None:
+                candidate=dict(quote,_code=position.code,_source=source,_received_at=time.time())
+                old=self.quotes.get(position.code) or {};old_time=quote_timestamp(old);new_time=quote_timestamp(candidate)
+                if new_time and new_time>time.time()+60:error='来源返回未来时间，保留旧快照'
+                elif old_time and (new_time is None or new_time<old_time):error='来源时间缺失或倒退，保留旧快照'
+                else:
+                    candidate.pop('_last_error',None)
+                    self.quotes[position.code]=candidate
+                    self.failed_codes.discard(position.code);self.quote_errors.pop(position.code,None)
+            else:error=_error or '来源未返回该股票的有效价格'
+            if error:
+                self.failed_codes.add(position.code);self.quote_errors[position.code]=str(error)[:180]
+                if position.code in self.quotes:self.quotes[position.code]['_last_error']=self.quote_errors[position.code]
+            if self.quote_store and position.code in self.quotes:
+                try:self.quote_store.cache_quote(position.code,source,self.quotes[position.code])
+                except ResearchError as error:self.cache_error=str(error)
         self.risk.quote_received()
         self.render()
 

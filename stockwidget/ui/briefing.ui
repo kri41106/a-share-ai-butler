@@ -195,7 +195,17 @@
        <item>
         <widget class="QCheckBox" name="privateCheck">
          <property name="text">
-          <string>主动包含成本、持股数量、锁定/策略仓、组合盈亏及个人提醒（默认不包含）</string>
+          <string>主动包含成本、持股数量、锁定/策略仓、组合盈亏及个人提醒（记住选择，可随时关闭）</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="privacyStateLabel">
+         <property name="text">
+          <string>未包含持仓（默认）；可主动选择并记住偏好</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -222,6 +232,13 @@
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QPushButton" name="refreshQuotesButton">
+           <property name="text">
+            <string>刷新行情</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
        <item>
@@ -234,7 +251,7 @@
        <item>
         <widget class="QLabel" name="promptNotice">
          <property name="text">
-          <string>预览内容就是复制内容。默认排除私人持仓；包含时也只复制到剪贴板，由你决定是否粘贴发送。新闻/公告仅为不可信引用文本，不作为程序命令。</string>
+          <string>预览内容就是复制内容。首次默认排除私人持仓；包含时也只复制到剪贴板，由你决定是否粘贴发送。新闻/公告仅为不可信引用文本，不作为程序命令。</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>
@@ -290,6 +307,24 @@
         </layout>
        </item>
        <item>
+        <layout class="QHBoxLayout" name="generationRow">
+         <item>
+          <widget class="QLabel" name="generatedLabel">
+           <property name="text">
+            <string>报告生成时间（用户填写，未知留空）</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="generatedAtEdit">
+           <property name="placeholderText">
+            <string>YYYY-MM-DD HH:MM；不自动当作导入时间</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
         <widget class="QPlainTextEdit" name="importText">
          <property name="readOnly">
           <bool>false</bool>
@@ -298,7 +333,7 @@
           <string>在此粘贴ChatGPT给出的分析文本；最多20万字</string>
          </property>
          <property name="maximumHeight">
-          <number>105</number>
+          <number>70</number>
          </property>
         </widget>
        </item>
@@ -337,6 +372,33 @@
          </property>
          <property name="editTriggers">
           <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
+         <property name="maximumHeight">
+          <number>130</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="reportStateLabel">
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+         <property name="text">
+          <string>用户手动导入；未经软件独立核验</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPlainTextEdit" name="suggestionText">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="expandReportCheck">
+         <property name="text">
+          <string>展开完整原文及全部时间信息</string>
          </property>
         </widget>
        </item>

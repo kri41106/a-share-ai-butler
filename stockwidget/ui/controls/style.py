@@ -89,6 +89,11 @@ def apply_portfolio_theme(widget):
                        color: #eeeeee; gridline-color: #505050;
                        selection-background-color: #344c6b; selection-color: #ffffff; }
         QHeaderView::section { background-color: #303030; color: #eeeeee; padding: 6px; }
+        QTabWidget::pane { border: 1px solid #555555; }
+        QTabBar::tab { background: #303030; color: #eeeeee; border: 1px solid #666666;
+                       padding: 6px 10px; }
+        QTabBar::tab:selected { background: #344c6b; color: #ffffff; border-color: #7ab8ff; }
+        QTabBar::tab:hover { background: #444444; }
     """)
 
 

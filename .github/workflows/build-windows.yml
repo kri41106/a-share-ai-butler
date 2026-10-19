@@ -34,7 +34,7 @@ jobs:
       - name: Run portfolio and related baseline tests
         env:
           QT_QPA_PLATFORM: offscreen
-        run: python -m unittest tests.core.test_portfolio tests.core.test_multi_portfolio tests.core.test_risk tests.core.test_briefing tests.ui.test_spin_inputs tests.ui.test_briefing tests.data.test_research tests.ui.test_portfolio tests.ui.test_risk tests.core.test_watchlist tests.core.test_config tests.core.test_window_rules tests.data.test_quotes tests.data.test_bars tests.core.test_quote_presentation -v
+        run: python -m unittest tests.core.test_portfolio tests.core.test_multi_portfolio tests.core.test_risk tests.core.test_briefing tests.core.test_stage4 tests.ui.test_stage4 tests.ui.test_spin_inputs tests.ui.test_briefing tests.data.test_research tests.ui.test_portfolio tests.ui.test_risk tests.core.test_watchlist tests.core.test_config tests.core.test_window_rules tests.data.test_quotes tests.data.test_bars tests.core.test_quote_presentation -v
 
       - name: Offscreen application startup (not a physical desktop test)
         env:

@@ -11,6 +11,7 @@ from PySide6.QtUiTools import QUiLoader
 from stockwidget.core.portfolio import PortfolioError
 from stockwidget.core.risk import clock_text,RiskError
 from stockwidget.core.briefing import BriefingStore,build_packet,source_status,report_text
+from stockwidget.core.advice import extract_summary,summary_text,report_status
 from stockwidget.data.research import fetch_announcements,fetch_news,ResearchError,safe_link,TTL
 from stockwidget.ui.controls.style import apply_portfolio_theme
 
@@ -22,7 +23,7 @@ class BriefingCenter(QWidget):
     def __init__(self,panel):
         super().__init__(panel,Qt.Window)
         self.panel=panel
-        self.store=BriefingStore(panel.store.path.parent/'research.sqlite3')
+        self.store=panel.quote_store or BriefingStore(panel.store.path.parent/'research.sqlite3')
         self.positions=[];self.draft=None;self.article_rows=[];self.report_rows=[];self.busy=False
         self.setWindowTitle('新闻公告与综合分析 · 手动ChatGPT资料')
         self.resize(1050,700);self.setMinimumSize(750,580)
@@ -34,17 +35,21 @@ class BriefingCenter(QWidget):
         if self.form is None:raise ResearchError('无法加载综合分析界面。')
         QVBoxLayout(self).addWidget(self.form)
         names=('scopeCombo','statusLabel','tabs','articleFilter','articlesTable','articleDetails','overviewText',
-               'privateCheck','promptText','packetCombo','reportTitleEdit','importText','reportsTable','reportDetails')
+               'privateCheck','promptText','packetCombo','reportTitleEdit','importText','reportsTable','reportDetails',
+               'privacyStateLabel','suggestionText','reportStateLabel','expandReportCheck','generatedAtEdit')
         for name in names:setattr(self,name,self.form.findChild(QObject,name))
         self.statusLabel.setMaximumHeight(85)
         self.scopeCombo.currentIndexChanged.connect(self.rebuild)
-        self.privateCheck.toggled.connect(self.rebuild)
+        self.privateCheck.setChecked(self.store.private_preference())
+        self.privateCheck.toggled.connect(self.private_changed)
+        self.expandReportCheck.toggled.connect(self.reportDetails.setVisible)
+        self.reportDetails.hide()
         self.articleFilter.currentIndexChanged.connect(self.render_articles)
         self.articlesTable.currentCellChanged.connect(self.select_article)
         self.reportsTable.currentCellChanged.connect(self.select_report)
         callbacks={'reloadPositionsButton':self.reload_positions,'fetchButton':lambda:self.fetch(True),
                    'openArticleButton':self.open_article,'buildOverviewButton':self.rebuild,'buildPromptButton':self.rebuild,
-                   'copyPromptButton':self.copy_prompt,'openChatGPTButton':self.open_chatgpt,
+                   'copyPromptButton':self.copy_prompt,'openChatGPTButton':self.open_chatgpt,'refreshQuotesButton':self.panel.refresh,
                    'importReportButton':self.import_report,'refreshReportsButton':self.refresh_reports,
                    'copyReportButton':self.copy_report,'deleteReportButton':self.delete_report}
         for name,callback in callbacks.items():self.form.findChild(QObject,name).clicked.connect(callback)
@@ -52,7 +57,7 @@ class BriefingCenter(QWidget):
         self.progress.connect(self.statusLabel.setText)
 
     def open_page(self,index,*,auto_fetch=True):
-        self.privateCheck.setChecked(False)
+        self.privateCheck.setChecked(self.store.private_preference())
         self.reload_positions(prefer_selected=True)
         self.tabs.setCurrentIndex(index)
         self.show();self.raise_();self.activateWindow()
@@ -79,8 +84,16 @@ class BriefingCenter(QWidget):
         positions=self.panel.store.load_all();scope=self.scopeCombo.currentData()
         return [p for p in positions if not scope or f'{p.position_id}|{p.code}'==scope]
 
-    def collect(self,private):
-        positions=self.current_positions();cache={};alerts={};options={};missing=[];risk_available=self.panel.risk.store is not None
+    def private_changed(self,checked):
+        try:self.store.private_preference(checked)
+        except ResearchError as error:self.statusLabel.setText(str(error))
+        self.rebuild()
+
+    def collect(self,private,*,positions=None,quotes=None,now=None):
+        positions=self.current_positions() if positions is None else positions
+        quotes=self.panel.display_quotes() if quotes is None else quotes
+        now=time.time() if now is None else now
+        cache={};alerts={};options={};missing=[];risk_available=self.panel.risk.store is not None
         for p in positions:
             for kind in ('announcement','news'):cache[(p.code,kind)]=self.store.cached(p.code,kind)
             if private:
@@ -92,13 +105,16 @@ class BriefingCenter(QWidget):
                     except RiskError:
                         risk_available=False;missing.append(key)
                 else:missing.append(key)
-        return build_packet(positions,self.panel.quotes,self.panel.source,cache,now=time.time(),include_private=private,
-                            failed_codes=self.panel.failed_codes,alerts=alerts,risk_options=options,risk_missing=missing,failure_counts=self.panel.risk.failures)
+        return build_packet(positions,quotes,self.panel.source,cache,now=now,include_private=private,
+                            failed_codes=self.panel.failed_codes,alerts=alerts,risk_options=options,risk_missing=missing,failure_counts=self.panel.risk.failures,scope_all=not bool(self.scopeCombo.currentData()))
 
     def rebuild(self,*_args):
         try:
-            self.overviewText.setPlainText(self.collect(True)['body'])
-            self.draft=self.collect(self.privateCheck.isChecked())
+            self.panel._reload();self.panel.render()
+            positions=self.current_positions();quotes=self.panel.display_quotes();now=time.time()
+            self.overviewText.setPlainText(self.collect(True,positions=positions,quotes=quotes,now=now)['body'])
+            self.draft=self.collect(self.privateCheck.isChecked(),positions=positions,quotes=quotes,now=now)
+            self.privacyStateLabel.setText(('已包含持仓：成本、数量、锁定/策略仓及私人提醒；' if self.draft['private'] else '未包含持仓：不导出成本、股数和私人提醒；')+'已记住选择，可随时关闭。')
             self.promptText.setPlainText(self.draft['prompt'])
             self.statusLabel.setText('资料已在本机整理，未上传。复制后由你决定是否粘贴给ChatGPT。')
             self.render_articles()
@@ -222,12 +238,30 @@ class BriefingCenter(QWidget):
     def import_report(self):
         try:
             packet=self.packetCombo.currentData()
-            self.store.import_report(packet,self.reportTitleEdit.text(),self.importText.toPlainText(),now=time.time())
+            self.store.import_report(packet,self.reportTitleEdit.text(),self.importText.toPlainText(),now=time.time(),generated_at=self.generatedAtEdit.text().strip())
             self.importText.clear();self.refresh_reports();self.statusLabel.setText('已保存用户手动导入报告；内容未经独立核验，未修改持仓或执行交易。')
         except ResearchError as error:self.statusLabel.setText(str(error))
 
     def select_report(self,row,*_args):
-        self.reportDetails.setPlainText(report_text(self.report_rows[row]) if 0<=row<len(self.report_rows) else '')
+        if not 0<=row<len(self.report_rows):
+            self.reportDetails.clear();self.suggestionText.clear();return
+        record=self.report_rows[row]
+        self.reportDetails.setPlainText(report_text(record))
+        fields=extract_summary(record['content'])
+        self.suggestionText.setPlainText('用户手动导入，未经核验\n'+summary_text(fields) if fields else '未可靠识别简明格式，以下保存并显示原文，未补造结论：\n'+record['content'])
+        self.expandReportCheck.setChecked(fields is None)
+        self.reportDetails.setVisible(self.expandReportCheck.isChecked())
+        self.refresh_report_status()
+
+    def refresh_report_status(self):
+        i=self.reportsTable.currentRow()
+        if not 0<=i<len(self.report_rows):return
+        row=self.report_rows[i]
+        try:
+            state=report_status(row,self.panel.store.load_all(),self.panel.display_quotes(),self.panel.source,now=time.time())
+            scope='、'.join(p['code'] for p in json.loads(row['scope_json']))
+            self.reportStateLabel.setText(state+'\n原报告范围：'+scope+'；所用行情：'+row['data_time'])
+        except (ResearchError,PortfolioError) as error:self.reportStateLabel.setText(str(error))
 
     def copy_report(self):
         i=self.reportsTable.currentRow()

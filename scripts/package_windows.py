@@ -1,5 +1,5 @@
 """复用 one-dir 产物，打包程序/声明；不会读取用户持仓目录。Apache-2.0。
-Modified 2026-10-19: package 3A spin repair and 3B manual ChatGPT workflow.
+Modified 2026-10-19: stage4 snapshot/advice delivery; retain system ICU fix.
 """
 from importlib.metadata import distribution, PackageNotFoundError
 from pathlib import Path
@@ -25,12 +25,12 @@ def main():
         stage.mkdir()
         shutil.copy2(source / "StockWidget.exe", stage)
         shutil.copytree(source / "_internal", stage / "_internal")
-        for name in ("README.md", "LICENSE", "NOTICE", "THIRD_PARTY.md", "PROGRESS.md", "WINDOWS_STARTUP.md", "UPGRADE_MULTI.md", "UPGRADE_3A.md", "UPGRADE_3B.md", "DATA_SOURCES_3B.md"):
+        for name in ("README.md", "LICENSE", "NOTICE", "THIRD_PARTY.md", "PROGRESS.md", "WINDOWS_STARTUP.md", "UPGRADE_MULTI.md", "UPGRADE_3A.md", "UPGRADE_3B.md", "UPGRADE_STAGE4.md", "DATA_SOURCES_3B.md"):
             shutil.copy2(ROOT / name, stage)
         (stage / "STARTUP_FIX.txt").write_text(
-            "3A数字框修复与3B公告/手动ChatGPT分析版 stage3b-manual1\n"
+            "第四阶段行情快照与简明建议版 stage4-snapshot1\n"
             "保留 winfix1 的 ICU 修复；请完整解压到新目录，不与旧包混合。\n"
-            "升级与使用见 UPGRADE_3B.md；启动诊断见 WINDOWS_STARTUP.md。不执行真实交易。\n", encoding="utf-8-sig")
+            "升级与使用见 UPGRADE_STAGE4.md；启动诊断见 WINDOWS_STARTUP.md。不执行真实交易。\n", encoding="utf-8-sig")
         shutil.copytree(ROOT / "third-party-licenses", stage / "third-party-licenses")
         licenses = stage / "third-party-licenses"
         python_license = Path(sys.base_prefix) / "LICENSE.txt"
@@ -54,7 +54,7 @@ def main():
                         copied.parent.mkdir(parents=True, exist_ok=True)
                         shutil.copy2(original, copied)
         (stage / "使用说明.txt").write_text(
-            "完整解压后双击 StockWidget.exe。\n这是3A修复与3B个人验收包，尚待用户 Windows 实机验收。\n"
+            "完整解压后双击 StockWidget.exe。\n这是第四阶段个人验收包 stage4-snapshot1，尚待用户 Windows 实机验收。\n"
             "本地示例持仓不等于券商账户持仓；软件不执行真实交易。\n"
             "关闭面板后通过托盘“我的持仓”恢复；托盘“退出”结束程序。\n"
             "持仓文件：%APPDATA%/StockWidget/portfolio/positions.sqlite3。请勿上传此文件。\n",

@@ -63,14 +63,17 @@ class BriefingUiTests(unittest.TestCase):
         with patch('stockwidget.ui.briefing.fetch_announcements',side_effect=ValueError('bad payload')),patch('stockwidget.ui.briefing.fetch_news',return_value=[]):
             w.fetch(True);self.wait(w)
         self.assertIn('来源解析失败',w.store.cached('001330.SZ','announcement')[1]['error'])
-    def test_copy_prompt_default_private_opt_in_and_reopening_resets_consent(self):
+    def test_copy_prompt_default_private_opt_in_remembered_and_can_be_disabled(self):
         w=self.open(2);before=self.store.path.read_bytes()
         w.copy_prompt();text=QApplication.clipboard().text()
         self.assertNotIn('9.429',text);self.assertNotIn('1200 股',text)
         w.privateCheck.setChecked(True);w.copy_prompt()
         text=QApplication.clipboard().text();self.assertIn('9.429',text);self.assertIn('1200 股',text)
         self.panel.open_briefing(2,auto_fetch=False)
-        self.assertFalse(w.privateCheck.isChecked());self.assertNotIn('9.429',w.promptText.toPlainText())
+        self.assertTrue(w.privateCheck.isChecked());self.assertIn('9.429',w.promptText.toPlainText())
+        w.privateCheck.setChecked(False);w.copy_prompt()
+        self.assertNotIn('9.429',QApplication.clipboard().text())
+        self.panel.open_briefing(2,auto_fetch=False);self.assertFalse(w.privateCheck.isChecked())
         self.assertEqual(self.store.path.read_bytes(),before)
     def test_open_chatgpt_uses_only_constant_official_home_and_no_prompt_in_url(self):
         w=self.open(2)
@@ -126,7 +129,7 @@ class BriefingUiTests(unittest.TestCase):
         now=time.time();self.panel.quotes['001330.SZ']={'current_price':10,'timestamp':now}
         w.rebuild();self.assertIn('685.20',w.promptText.toPlainText())
         with patch('stockwidget.ui.briefing.time.time',return_value=now+121):w.copy_prompt()
-        self.assertNotIn('685.20',QApplication.clipboard().text());self.assertIn('无有效估值',QApplication.clipboard().text())
+        self.assertIn('685.20',QApplication.clipboard().text());self.assertIn('已过期',QApplication.clipboard().text());self.assertIn('参考',QApplication.clipboard().text())
 
     def test_open_from_selected_home_stock_binds_correct_scope_each_time(self):
         second=self.add_second()

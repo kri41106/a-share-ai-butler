@@ -11,7 +11,7 @@ import traceback
 def run(report_file):
     report_path = Path(report_file).resolve()
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    result = {"build": "stage3b-manual1", "ok": False, "frozen": bool(getattr(sys, "frozen", False)),
+    result = {"build": "stage4-snapshot1", "ok": False, "frozen": bool(getattr(sys, "frozen", False)),
               "python": platform.python_version(), "windows": platform.platform()}
     def stage(name):
         result["stage"] = name
@@ -74,11 +74,28 @@ def run(report_file):
                 result["chatgpt_prompt_private_default_off"] = not briefing.privateCheck.isChecked() and '9.429' not in briefing.promptText.toPlainText()
                 briefing.tabs.setCurrentIndex(3);app.processEvents()
                 result["ai_history_visible"] = briefing.tabs.currentIndex()==3
+                # Isolated synthetic scenario only; never enters the user's database or clipboard.
+                import time
+                now=time.time()
+                app.portfolio.quotes['001330.SZ']={'current_price':10,'prev_close':9,'timestamp':now,
+                    '_code':'001330.SZ','_source':'sina'}
+                app.portfolio.render();briefing.privateCheck.setChecked(True);briefing.rebuild()
+                result['synthetic_snapshot_export_matches_home'] = ('10.00' in app.portfolio.positionsTable.item(0,1).text()
+                    and '685.20' in briefing.promptText.toPlainText() and '不超过200字' in briefing.promptText.toPlainText())
+                packet=briefing.store.save_packet(briefing.draft)
+                briefing.store.import_report(packet,'启动验证（模拟资料）','【当前建议】观望\n【主要原因】模拟测试。\n【行动条件】核实数据后再评估。\n【主要风险】资料不确定。\n【数据截至】模拟行情',now=now)
+                briefing.refresh_reports();app.processEvents()
+                result['concise_report_visible'] = ('【当前建议】观望' in briefing.suggestionText.toPlainText()
+                    and not briefing.reportDetails.isVisible())
+                app.portfolio.quotes['001330.SZ']['current_price']=11;app.portfolio.render()
+                result['changed_snapshot_report_warning'] = '数据已变化' in briefing.reportStateLabel.text()
+                result['ui_scale'] = app.devicePixelRatio()
                 result["ok"] = (result["panel_visible"] and result["icu_from_system32"]
                                 and result["reminder_settings_visible"] and result["risk_database_ready"]
                                 and result["spin_arrow_increments"] and result["news_center_visible"]
                                 and result["overview_ready"] and result["chatgpt_prompt_private_default_off"]
-                                and result["ai_history_visible"])
+                                and result["ai_history_visible"] and result['synthetic_snapshot_export_matches_home']
+                                and result['concise_report_visible'] and result['changed_snapshot_report_warning'])
                 stage("closing_after_startup_check")
                 # Test-mode exit must not be vetoed by close-to-tray windows.
                 app.tray.hide()
