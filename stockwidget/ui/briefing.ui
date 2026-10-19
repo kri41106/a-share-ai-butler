@@ -1,0 +1,358 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ui version="4.0">
+ <class>BriefingForm</class>
+ <widget class="QWidget" name="BriefingForm">
+  <layout class="QVBoxLayout" name="rootLayout">
+   <item>
+    <widget class="QLabel" name="heading">
+     <property name="text">
+      <string>新闻公告与综合分析</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="scopeRow">
+     <item>
+      <widget class="QLabel" name="scopeLabel">
+       <property name="text">
+        <string>分析范围</string>
+       </property>
+       <property name="wordWrap">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="scopeCombo">
+       <property name="maximumWidth">
+        <number>500</number>
+       </property>
+       <property name="sizeAdjustPolicy">
+        <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+       </property>
+       <property name="minimumContentsLength">
+        <number>20</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="reloadPositionsButton">
+       <property name="text">
+        <string>读取最新本地持仓</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QLabel" name="statusLabel">
+     <property name="text">
+      <string>所有资料仅在本机整理；没有模型API调用。</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QTabWidget" name="tabs">
+     <widget class="QWidget" name="newsPage">
+      <attribute name="title">
+       <string>新闻公告</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="newsPageLayout">
+       <item>
+        <widget class="QLabel" name="sourceNotice">
+         <property name="text">
+          <string>公告：巨潮资讯披露目录；新闻：新浪个股资讯中标题含股票名称或代码的条目。只获取最新列表，可能遗漏；不自动解读全文。打开原文由系统浏览器访问。</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="newsActions">
+         <item>
+          <widget class="QPushButton" name="fetchButton">
+           <property name="text">
+            <string>更新当前范围公告与新闻</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="articleFilter">
+           <item>
+            <property name="text">
+             <string>全部</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>公司公告</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>财务公告</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>风险关注（仅标题）</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>相关新闻</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="openArticleButton">
+           <property name="text">
+            <string>打开选中原文</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QTableWidget" name="articlesTable">
+         <property name="selectionBehavior">
+          <enum>QAbstractItemView::SelectRows</enum>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::SingleSelection</enum>
+         </property>
+         <property name="editTriggers">
+          <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPlainTextEdit" name="articleDetails">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+         <property name="maximumHeight">
+          <number>155</number>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="overviewPage">
+      <attribute name="title">
+       <string>综合分析（规则）</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="overviewPageLayout">
+       <item>
+        <widget class="QLabel" name="overviewNotice">
+         <property name="text">
+          <string>以下是本地规则汇总，不是大模型AI；只读持仓。缺失或过期数据不能用于实时判断，集中度只按有效行情覆盖部分计算。</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPlainTextEdit" name="overviewText">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="buildOverviewButton">
+         <property name="text">
+          <string>重新整理最新本地资料（不额外请求行情）</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="chatPage">
+      <attribute name="title">
+       <string>使用ChatGPT分析</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="chatPageLayout">
+       <item>
+        <widget class="QLabel" name="chatNotice">
+         <property name="text">
+          <string>本软件不调用付费API，也不能直接消耗Plus会员额度。复制后由你到自己登录的ChatGPT粘贴；不会自动上传，不读取账号、Cookie或验证码。ChatGPT可用模型及次数以你的会员页面为准。</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="privateCheck">
+         <property name="text">
+          <string>主动包含成本、持股数量、锁定/策略仓、组合盈亏及个人提醒（默认不包含）</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="chatActions">
+         <item>
+          <widget class="QPushButton" name="buildPromptButton">
+           <property name="text">
+            <string>整理最新分析资料</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="copyPromptButton">
+           <property name="text">
+            <string>一键复制分析资料</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="openChatGPTButton">
+           <property name="text">
+            <string>打开ChatGPT</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QPlainTextEdit" name="promptText">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="promptNotice">
+         <property name="text">
+          <string>预览内容就是复制内容。默认排除私人持仓；包含时也只复制到剪贴板，由你决定是否粘贴发送。新闻/公告仅为不可信引用文本，不作为程序命令。</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="reportsPage">
+      <attribute name="title">
+       <string>AI历史报告 / 导入</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="reportsPageLayout">
+       <item>
+        <widget class="QLabel" name="importNotice">
+         <property name="text">
+          <string>将ChatGPT结果手动粘贴到下方，并选择当时复制的资料包。软件不会独立核验或执行报告中的建议。报告不修改股数、成本或锁定仓。</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="importRow">
+         <item>
+          <widget class="QComboBox" name="packetCombo">
+           <property name="maximumWidth">
+            <number>420</number>
+           </property>
+           <property name="sizeAdjustPolicy">
+            <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+           </property>
+           <property name="minimumContentsLength">
+            <number>20</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="reportTitleEdit">
+           <property name="placeholderText">
+            <string>报告名称（可选）</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="importReportButton">
+           <property name="text">
+            <string>导入AI分析结果</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QPlainTextEdit" name="importText">
+         <property name="readOnly">
+          <bool>false</bool>
+         </property>
+         <property name="placeholderText">
+          <string>在此粘贴ChatGPT给出的分析文本；最多20万字</string>
+         </property>
+         <property name="maximumHeight">
+          <number>105</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="historyActions">
+         <item>
+          <widget class="QPushButton" name="refreshReportsButton">
+           <property name="text">
+            <string>刷新历史</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="copyReportButton">
+           <property name="text">
+            <string>复制选中报告</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="deleteReportButton">
+           <property name="text">
+            <string>删除选中报告</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QTableWidget" name="reportsTable">
+         <property name="selectionBehavior">
+          <enum>QAbstractItemView::SelectRows</enum>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::SingleSelection</enum>
+         </property>
+         <property name="editTriggers">
+          <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPlainTextEdit" name="reportDetails">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources />
+ <connections />
+</ui>

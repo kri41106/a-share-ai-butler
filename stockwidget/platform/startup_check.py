@@ -11,7 +11,7 @@ import traceback
 def run(report_file):
     report_path = Path(report_file).resolve()
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    result = {"build": "stage3a-risk1", "ok": False, "frozen": bool(getattr(sys, "frozen", False)),
+    result = {"build": "stage3b-manual1", "ok": False, "frozen": bool(getattr(sys, "frozen", False)),
               "python": platform.python_version(), "windows": platform.platform()}
     def stage(name):
         result["stage"] = name
@@ -55,8 +55,30 @@ def run(report_file):
                 center = app.portfolio.risk.open(1) if app.portfolio else None
                 result["reminder_settings_visible"] = bool(center and center.isVisible() and center.tabs.currentIndex() == 1)
                 result["risk_database_ready"] = bool(app.portfolio and app.portfolio.risk.store)
+                from PySide6.QtCore import QEvent,QPointF,Qt
+                from PySide6.QtGui import QMouseEvent
+                from PySide6.QtWidgets import QApplication,QStyle,QStyleOptionSpinBox
+                spin=center.failuresSpin
+                before=spin.value();option=QStyleOptionSpinBox();spin.initStyleOption(option)
+                rect=spin.style().subControlRect(QStyle.CC_SpinBox,option,QStyle.SC_SpinBoxUp,spin)
+                point=QPointF(rect.center());global_point=QPointF(spin.mapToGlobal(rect.center()))
+                QApplication.sendEvent(spin,QMouseEvent(QEvent.MouseButtonPress,point,global_point,Qt.LeftButton,Qt.LeftButton,Qt.NoModifier))
+                QApplication.sendEvent(spin,QMouseEvent(QEvent.MouseButtonRelease,point,global_point,Qt.LeftButton,Qt.NoButton,Qt.NoModifier))
+                result["spin_arrow_increments"] = spin.value()==before+1
+                spin.setValue(before)
+                briefing=app.portfolio.open_briefing(0,auto_fetch=False)
+                result["news_center_visible"] = bool(briefing and briefing.isVisible())
+                briefing.tabs.setCurrentIndex(1);app.processEvents()
+                result["overview_ready"] = bool(briefing.overviewText.toPlainText())
+                briefing.tabs.setCurrentIndex(2);app.processEvents()
+                result["chatgpt_prompt_private_default_off"] = not briefing.privateCheck.isChecked() and '9.429' not in briefing.promptText.toPlainText()
+                briefing.tabs.setCurrentIndex(3);app.processEvents()
+                result["ai_history_visible"] = briefing.tabs.currentIndex()==3
                 result["ok"] = (result["panel_visible"] and result["icu_from_system32"]
-                                and result["reminder_settings_visible"] and result["risk_database_ready"])
+                                and result["reminder_settings_visible"] and result["risk_database_ready"]
+                                and result["spin_arrow_increments"] and result["news_center_visible"]
+                                and result["overview_ready"] and result["chatgpt_prompt_private_default_off"]
+                                and result["ai_history_visible"])
                 stage("closing_after_startup_check")
                 # Test-mode exit must not be vetoed by close-to-tray windows.
                 app.tray.hide()

@@ -17,6 +17,8 @@ from stockwidget.ui.controls.style import apply_portfolio_theme
 from stockwidget.core.window_rules import quote_timestamp, QUOTE_TIMEZONE
 from stockwidget.data.quotes import fetch_quote_result
 from stockwidget.ui.risk import RiskController
+from stockwidget.ui.briefing import BriefingCenter
+from stockwidget.data.research import ResearchError
 
 
 class QuotePoller(QObject):
@@ -104,12 +106,21 @@ class PortfolioPanel(QWidget):
         self.clock = QTimer(self)
         self.clock.timeout.connect(self.render)
         self.clock.start(5000)
+        self.briefing = None
+        for name,index in (("newsButton",0),("summaryButton",1),("chatgptButton",2),("importAiButton",3),("aiHistoryButton",3)):
+            self.form.findChild(QObject,name).clicked.connect(lambda _checked=False,tab=index:self.open_briefing(tab))
         self.risk = RiskController(self)
         for name, index in (("riskButton",0),("alertsButton",1),("recordsButton",2)):
             self.form.findChild(QObject,name).clicked.connect(lambda _checked=False, tab=index: self.risk.open(tab))
         app.win.configuration_changed.connect(self.sync_quote_settings)
         self.sync_quote_settings()
         QTimer.singleShot(0, self.refresh)
+
+    def open_briefing(self,index=0,*,auto_fetch=True):
+        try:
+            if self.briefing is None:self.briefing=BriefingCenter(self)
+            return self.briefing.open_page(index,auto_fetch=auto_fetch)
+        except (ResearchError,PortfolioError) as error:self._error(error)
 
     def home(self):
         self.pages.setCurrentIndex(0)

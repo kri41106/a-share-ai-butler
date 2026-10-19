@@ -21,5 +21,8 @@
         <file alias="futures_sh.json">data/futures_sh.json</file>
         <file alias="risk.ui">../stockwidget/ui/risk.ui</file>
         <file alias="risk-check.svg">icons/risk-check.svg</file>
+        <file alias="spin-up.svg">icons/spin-up.svg</file>
+        <file alias="spin-down.svg">icons/spin-down.svg</file>
+        <file alias="briefing.ui">../stockwidget/ui/briefing.ui</file>
     </qresource>
 </RCC>

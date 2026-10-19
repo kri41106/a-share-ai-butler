@@ -122,6 +122,8 @@ class RiskCenter(QWidget):
                 setattr(self,kind+'Edit',self.form.findChild(QObject,kind+'Edit'))
         for name in ('failures','stale_seconds','cooldown'):
             setattr(self,name+'Spin',self.form.findChild(QObject,name+'Spin'))
+        self.cooldownSpin.valueChanged.connect(lambda value: self.cooldownSpin.setSuffix(f' 秒（{value / 60:g} 分钟）'))
+        self.cooldownSpin.setSuffix(f' 秒（{self.cooldownSpin.value() / 60:g} 分钟）')
         self.saveAlertsButton.clicked.connect(self.save)
         self.analyzeButton.clicked.connect(self.run_analysis)
         self.tabs.currentChanged.connect(self.refresh_records)

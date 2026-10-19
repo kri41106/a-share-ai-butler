@@ -163,7 +163,7 @@
              <item>
               <widget class="QLabel" name="failuresLabel">
                <property name="text">
-                <string>连续失败次数</string>
+                <string>连续多少次获取失败后提醒</string>
                </property>
                <property name="wordWrap">
                 <bool>true</bool>
@@ -190,7 +190,7 @@
              <item>
               <widget class="QLabel" name="stale_secondsLabel">
                <property name="text">
-                <string>过期秒数（价格判断仍限120秒）</string>
+                <string>行情多久未更新后提醒（秒）</string>
                </property>
                <property name="wordWrap">
                 <bool>true</bool>
@@ -217,7 +217,7 @@
              <item>
               <widget class="QLabel" name="cooldownLabel">
                <property name="text">
-                <string>同条件恢复后再次提醒的最短间隔（秒）</string>
+                <string>恢复后再次提醒的最短间隔（秒）</string>
                </property>
                <property name="wordWrap">
                 <bool>true</bool>

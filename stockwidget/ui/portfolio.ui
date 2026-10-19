@@ -206,6 +206,45 @@
         </layout>
        </item>
        <item>
+        <layout class="QHBoxLayout" name="researchActions">
+         <item>
+          <widget class="QPushButton" name="newsButton">
+           <property name="text">
+            <string>新闻公告</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="summaryButton">
+           <property name="text">
+            <string>综合分析</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="chatgptButton">
+           <property name="text">
+            <string>使用ChatGPT分析</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="importAiButton">
+           <property name="text">
+            <string>导入AI分析结果</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="aiHistoryButton">
+           <property name="text">
+            <string>AI历史报告</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
         <widget class="QPushButton" name="refreshButton">
          <property name="text">
           <string>手动刷新行情</string>

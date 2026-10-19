@@ -60,6 +60,18 @@ def apply_portfolio_theme(widget):
         QLineEdit:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled, QComboBox:disabled {
             color: #aaaaaa; background-color: #292929; border-color: #555555;
         }
+        QSpinBox, QDoubleSpinBox { padding-right: 30px; min-height: 28px; }
+        QSpinBox::up-button, QDoubleSpinBox::up-button {
+            subcontrol-origin: border; subcontrol-position: top right;
+            width: 26px; height: 17px; background: #454545; border: 1px solid #777777;
+        }
+        QSpinBox::down-button, QDoubleSpinBox::down-button {
+            subcontrol-origin: border; subcontrol-position: bottom right;
+            width: 26px; height: 17px; background: #454545; border: 1px solid #777777;
+        }
+        QSpinBox::up-button:hover, QSpinBox::down-button:hover { background: #5b5b5b; }
+        QSpinBox::up-arrow, QDoubleSpinBox::up-arrow { image: url(:/spin-up.svg); width: 12px; height: 12px; }
+        QSpinBox::down-arrow, QDoubleSpinBox::down-arrow { image: url(:/spin-down.svg); width: 12px; height: 12px; }
         QCheckBox { spacing: 8px; }
         QCheckBox::indicator { width: 16px; height: 16px; border: 1px solid #aaaaaa; background: #303030; }
         QCheckBox::indicator:checked { background: #3566b8; border-color: #7ab8ff; image: url(:/risk-check.svg); }
