@@ -40,7 +40,7 @@ class BriefingTests(unittest.TestCase):
         for text in ('1200 股','9.429','锁定仓 200 股','策略仓 1000 股','685.20'):
             self.assertIn(text,packet['body'])
         self.assertIn('禁止建议卖出锁定仓',packet['prompt'])
-        self.assertIn('不输出具体交易股数',packet['prompt'])
+        self.assertIn('可以给有依据、附条件的参考股数',packet['prompt'])
     def test_prompt_contains_securities_volume_source_times_and_fact_uncertainty(self):
         packet=self.packet()
         for text in (CODE,'博纳影业','10000 股','新浪财经','北京时间','事实','推断','未知','不保证收益','不编造实时行情'):

@@ -242,6 +242,18 @@
         </layout>
        </item>
        <item>
+        <widget class="QLabel" name="buyBudgetLabel">
+         <property name="text"><string>本次买入预算（元，可留空）：本人核实的可用现金，已扣费用预留；仅包含私人持仓时复制。</string></property>
+         <property name="wordWrap"><bool>true</bool></property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="buyBudgetEdit">
+         <property name="placeholderText"><string>可选：本次买入预算（元，已扣预留费用；不含预计卖出款）。仅勾选包含私人持仓时导出。</string></property>
+         <property name="toolTip"><string>请本人核实当前可用现金并扣除费用预留后填写。不填则不能核算买入股数；仅本次窗口使用，不代表券商资金。</string></property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPlainTextEdit" name="promptText">
          <property name="readOnly">
           <bool>true</bool>
@@ -390,6 +402,8 @@
        </item>
        <item>
         <widget class="QPlainTextEdit" name="suggestionText">
+         <property name="font"><font><pointsize>11</pointsize></font></property>
+         <property name="minimumSize"><size><width>0</width><height>180</height></size></property>
          <property name="readOnly">
           <bool>true</bool>
          </property>

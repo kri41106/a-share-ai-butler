@@ -164,7 +164,7 @@ class BriefingStore:
 
     def reports(self):
         with self._db() as db:
-            return [dict(r) for r in db.execute('SELECT r.*,p.scope_json,p.data_time,p.created AS packet_created,p.context_json FROM reports r JOIN packets p ON p.id=r.packet_id ORDER BY r.id DESC LIMIT 200')]
+            return [dict(r) for r in db.execute('SELECT r.*,p.scope_json,p.data_time,p.private,p.created AS packet_created,p.context_json FROM reports r JOIN packets p ON p.id=r.packet_id ORDER BY r.id DESC LIMIT 200')]
 
     def delete_report(self,report_id):
         with self._db() as db:db.execute('DELETE FROM reports WHERE id=?',(report_id,))
@@ -198,7 +198,7 @@ def _quote_text(quote,now,failed,source='sina',code=None):
     return view,parts
 
 
-def build_packet(positions,quotes,source,cache,*,now,include_private=False,failed_codes=(),alerts=None,risk_options=None,risk_missing=(),failure_counts=None,scope_all=False,universe='holdings',purpose='review',focus=''):
+def build_packet(positions,quotes,source,cache,*,now,include_private=False,failed_codes=(),alerts=None,risk_options=None,risk_missing=(),failure_counts=None,scope_all=False,universe='holdings',purpose='review',focus='',buy_budget=None):
     """version1资料包可供未来正规Provider复用；当前唯一出口为用户手动复制。"""
     if not positions and purpose!='discovery':raise ResearchError('请先添加或选中持仓或候选股票。')
     alerts=alerts or {};risk_options=risk_options or {};failure_counts=failure_counts or {}
@@ -271,6 +271,12 @@ def build_packet(positions,quotes,source,cache,*,now,include_private=False,faile
     instructions=research_instructions(include_private)
     context=packet_context(positions,quotes,source,now,scope_all=scope_all)
     context.update(universe=universe,purpose=purpose,evidence=evidence_context(positions,cache,now))
+    if include_private and buy_budget not in (None,''):
+        from stockwidget.core.portfolio import money
+        budget=money(buy_budget)
+        context['buy_budget']=str(budget)
+        lines.append(f'本人填写本次买入预算：{budget:.2f}元（已扣预留费用，不含预计卖出款；仅用户声明，未同步券商；资金与申报规则须操作前再核对）。')
+        body='\n'.join(lines)
     times=[]
     for p in positions:
         stamp=quote_timestamp(quotes.get(p.code) or {})

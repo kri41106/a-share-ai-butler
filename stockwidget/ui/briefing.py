@@ -14,7 +14,7 @@ from stockwidget.core.briefing import BriefingStore,build_packet,source_status,r
 from stockwidget.core.candidates import CandidateStore,research_universe
 from stockwidget.core.quote_snapshot import quote_view
 from stockwidget.core.window_rules import quote_timestamp
-from stockwidget.core.advice import extract_summary,summary_text,report_status,evidence_context
+from stockwidget.core.advice import extract_summary,summary_text,report_status,evidence_context,checked_action
 from stockwidget.data.research import fetch_announcements,fetch_news,ResearchError,safe_link,TTL
 from stockwidget.ui.controls.style import apply_portfolio_theme
 
@@ -45,12 +45,13 @@ class BriefingCenter(QWidget):
         names=('scopeCombo','statusLabel','tabs','articleFilter','articlesTable','articleDetails','overviewText',
                'privateCheck','promptText','packetCombo','reportTitleEdit','importText','reportsTable','reportDetails',
                'privacyStateLabel','suggestionText','reportStateLabel','expandReportCheck','generatedAtEdit',
-               'candidateNameEdit','candidateCodeEdit','candidatesTable','taskCombo','focusEdit')
+               'candidateNameEdit','candidateCodeEdit','candidatesTable','taskCombo','focusEdit','buyBudgetEdit')
         for name in names:setattr(self,name,self.form.findChild(QObject,name))
         self.statusLabel.setMaximumHeight(85)
         self.scopeCombo.currentIndexChanged.connect(self.rebuild)
         self.taskCombo.currentIndexChanged.connect(self.task_changed)
         self.focusEdit.editingFinished.connect(self.rebuild)
+        self.buyBudgetEdit.editingFinished.connect(self.rebuild)
         self.privateCheck.setChecked(self.store.private_preference())
         self.privateCheck.toggled.connect(self.private_changed)
         self.expandReportCheck.toggled.connect(self.reportDetails.setVisible)
@@ -220,7 +221,8 @@ class BriefingCenter(QWidget):
                             failed_codes=self.panel.failed_codes,alerts=alerts,risk_options=options,risk_missing=missing,failure_counts=self.panel.risk.failures,
                             scope_all=self.scopeCombo.currentData() in ('','candidates','combined'),
                             universe=('combined' if self.scopeCombo.currentData()=='combined' else 'candidates' if positions and all(getattr(p,'candidate',False) for p in positions) else 'holdings'),
-                            purpose=('review','discovery','comparison')[self.taskCombo.currentIndex()],focus=self.focusEdit.text())
+                            purpose=('review','discovery','comparison')[self.taskCombo.currentIndex()],focus=self.focusEdit.text(),
+                            buy_budget=self.buyBudgetEdit.text() if private else None)
 
     def rebuild(self,*_args):
         try:
@@ -378,9 +380,16 @@ class BriefingCenter(QWidget):
             positions=research_universe(self.panel.store.load_all(),self.candidates.load_all())
             cache={(p.code,k):self.store.cached(p.code,k) for p in positions for k in ('announcement','news')}
             state=report_status(row,positions,self.quote_snapshot(),self.panel.source,now=time.time(),evidence=evidence_context(positions,cache,time.time()))
+            fields=extract_summary(row['content'])
+            if fields:
+                fields=checked_action(fields,row,positions,self.quote_snapshot(),self.panel.source,time.time(),
+                                      unchanged=state.startswith('仅对应下列原始股票'))
+                self.suggestionText.setPlainText('用户手动导入，参考意见；交易由本人执行\n\n'+summary_text(fields))
             scope=scope_caption(row)
             self.reportStateLabel.setText(state+'\n原报告范围：'+scope+'；所用行情：'+row['data_time'])
-        except (ResearchError,PortfolioError) as error:self.reportStateLabel.setText(str(error))
+        except (ResearchError,PortfolioError) as error:
+            self.reportStateLabel.setText(str(error))
+            self.suggestionText.setPlainText('当前数据读取失败，暂不展示操作摘要。请重试；完整原报告仍在展开区。')
 
     def copy_report(self):
         i=self.reportsTable.currentRow()

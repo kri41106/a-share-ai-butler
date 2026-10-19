@@ -11,7 +11,7 @@ import traceback
 def run(report_file):
     report_path = Path(report_file).resolve()
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    result = {"build": "stage4-prompt2", "ok": False, "frozen": bool(getattr(sys, "frozen", False)),
+    result = {"build": "stage4-action1", "ok": False, "frozen": bool(getattr(sys, "frozen", False)),
               "python": platform.python_version(), "windows": platform.platform()}
     def stage(name):
         result["stage"] = name
@@ -83,10 +83,10 @@ def run(report_file):
                 result['synthetic_snapshot_export_matches_home'] = ('10.00' in app.portfolio.positionsTable.item(0,1).text()
                     and '685.20' in briefing.promptText.toPlainText() and '不超过200字' in briefing.promptText.toPlainText())
                 packet=briefing.store.save_packet(briefing.draft)
-                briefing.store.import_report(packet,'启动验证（模拟资料）','【当前建议】观望\n【主要原因】模拟测试。\n【行动条件】核实数据后再评估。\n【主要风险】资料不确定。\n【数据截至】模拟行情',now=now)
+                briefing.store.import_report(packet,'启动验证（模拟资料）','【当前建议】观望\n【主要原因】模拟测试。\n【行动条件】核实数据后再评估。\n【主要风险】资料不确定。\n【数据截至】模拟行情\n【操作思路】全部保留，核实资料后再评估。',now=now)
                 briefing.refresh_reports();app.processEvents()
                 result['concise_report_visible'] = ('【当前建议】观望' in briefing.suggestionText.toPlainText()
-                    and not briefing.reportDetails.isVisible())
+                    and '【操作思路】全部保留' in briefing.suggestionText.toPlainText() and not briefing.reportDetails.isVisible())
                 app.portfolio.quotes['001330.SZ']['current_price']=11;app.portfolio.render()
                 result['changed_snapshot_report_warning'] = '数据已变化' in briefing.reportStateLabel.text()
                 briefing.tabs.setCurrentIndex(4)

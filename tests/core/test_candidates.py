@@ -56,7 +56,7 @@ class CandidateTests(unittest.TestCase):
         text=self.packet(self.hold.load_all())['prompt']
         for term in ('支持证据和反对证据','推翻判断','经营现金流','扣非利润','报告期','什么变化出现就放弃','资料不足不强排'):
             self.assertIn(term,text)
-        self.assertIn('禁止建议卖出锁定仓',text);self.assertIn('不输出具体交易股数',text)
+        self.assertIn('禁止建议卖出锁定仓',text);self.assertIn('可以给有依据、附条件的参考股数',text)
     def test_discovery_works_without_positions_and_never_claims_auto_screening(self):
         packet=self.packet([],purpose='discovery',focus='关注现金流')
         for text in ('不得只分析我当前持仓','最多3只','若无法联网','不凭记忆编造名单','关注现金流'):self.assertIn(text,packet['prompt'])
